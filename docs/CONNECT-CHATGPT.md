@@ -4,7 +4,7 @@
 
 ## 安装 Skill 插件
 
-运行 scripts/Pack-Plugin.ps1 得到 out/codex-dispatch-v0.1.3.zip。在账号当前支持的插件/Skill 导入入口安装该插件，并开始新会话，确认可以选择 codex-dispatch。若账号没有导入入口，按官方插件/Skills 文档检查可用性，不能用聊天附件代替账号安装。
+运行 scripts/Pack-Plugin.ps1 得到 out/codex-dispatch-v0.1.4.zip。在账号当前支持的插件/Skill 导入入口安装该插件，并开始新会话，确认可以选择 codex-dispatch。若账号没有导入入口，按官方插件/Skills 文档检查可用性，不能用聊天附件代替账号安装。
 
 ## 安装 Tunnel 客户端
 
@@ -34,6 +34,6 @@ Bridge 必须先真实 ready；Tunnel 客户端必须保持运行。在 ChatGPT 
 
 由用户在安装好的 ChatGPT 会话中明确要求：使用 codex-dispatch 派发到自己的准确工作区，仅查看仓库状态、不修改文件，并回传结果。Skill 应生成强制 Goal 与来源绑定，成功派发后结束，不主动 codex_get。
 
-观察 Codex 桌面中出现任务、正确工作区和实际只读结果。原生回传或可信 ID 消息能力不可用时，允许完整人工回传；报告该限制，不伪装自动回传成功。
+观察 Codex 桌面中出现任务、正确工作区和实际只读结果。原生回传或可信 ID 不可用时，仍需检查可用的标题与本次任务上下文核验路径；只有安全自动回传确实无法完成时，才输出完整人工回传结果、具体阻碍和路由核验事实，不伪装自动回传成功。
 
 参考：[Tunnel 官方说明](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels)、[插件使用说明](https://learn.chatgpt.com/docs/plugins)。Secure MCP Tunnel 用于私有开发连接，不是公开插件目录的公共 MCP 分发端点。

@@ -19,7 +19,7 @@ Resolve objective, repository/workspace, scope, authoritative references, requir
 
 The origin is the current ChatGPT conversation issuing THIS dispatch, not the receiving Codex conversation. Capture its exact title and any accurate conversation ID or native return binding from trustworthy current-session/runtime metadata. Record the evidence establishing that the identifier belongs to this origin and this dispatch. A user-supplied identifier must explicitly identify this task's origin; resolve any conflict instead of silently changing destinations.
 
-Do not search history to manufacture a current-session binding. Do not invent IDs, return handles, or codex_start parameters. When the actual tool accepts only workspace and prompt, put verified origin information in the prompt; only the runtime can provide a native parent binding. Record absent title, ID, binding, or transport capability as unavailable. Missing return transport or source metadata does not block otherwise authorized engineering; preserve the semantic origin and use manual relay if necessary.
+Do not search history to manufacture a current-session binding. Do not invent IDs, return handles, or codex_start parameters. When the actual tool accepts only workspace and prompt, put verified origin information in the prompt; only the runtime can provide a native parent binding. Record absent title, ID or binding as unavailable, and an unestablished transport as not established at dispatch. These describe the sender's knowledge at dispatch, not the receiving Codex environment's final capabilities. Missing return transport or source metadata does not block otherwise authorized engineering; preserve the semantic origin, inspect the receiver's available return capabilities at final handoff, and use manual relay only after the routing procedure establishes that safe automatic return cannot be completed.
 
 Keep origin identity separate from transport capability: an accurate ID is not proof a messaging tool accepts it, and a tool named notify_parent is not proof it returns to ChatGPT. A source_thread_id is usable only if trustworthy evidence establishes that it identifies this dispatch's actual originating ChatGPT conversation. A routable Bridge/runtime thread is not automatically that origin.
 
@@ -31,7 +31,7 @@ Conversation title: <exact current origin title, or unavailable>
 Bound conversation ID: <verified origin ID, or unavailable>
 Parent-return binding: <existing runtime binding, or unavailable>
 Binding evidence: <current-dispatch evidence, or unavailable>
-Known return transport: <verified available capability, or unavailable>
+Known return transport: <verified available capability, or not established at dispatch>
 Task identity: <task identity and this handoff's distinguishing context>
 Repository / workspace: <exact repository and workspace>
 BASE_SHA: <full fixed SHA when required, otherwise not applicable>
@@ -56,22 +56,22 @@ Generate one concrete /goal containing the objective, scope and applicable BASE_
 
 - Ordinary engineering problems remain in the receiving Codex conversation.
 - Return only for unresolved required product/core technical semantics, objective inability to finish after reasonable attempts, or completed work ready for final delivery.
-- Preserve the explicit origin bound for THIS task and the ordered return procedure below; never guess a ChatGPT target.
+- Deliver the final conclusion yourself to the explicit origin for THIS task using the ordered return procedure below; never guess a ChatGPT target. This handoff must expressly request that specific final delivery, so it is not deferred until the user says 'send it yourself' again. Preserve any user instruction explicitly forbidding automatic messages.
 - Unavailable return transport does not block authorized engineering work or count as an engineering CAPABILITY blocker.
 - Successful execution requires the requested outcome, required verification/review, and immutable repository delivery when applicable, plus either confirmed automatic final delivery to the verified origin or emission of the complete immutable final result for explicit human relay when safe automatic delivery is unavailable.
-- Manual fallback satisfies Codex's execution/packaging responsibility, not receipt by ChatGPT. Mark delivery pending_human_relay and never claim the origin received it. This alternative must be in the Goal from activation, not introduced later.
+- Manual fallback is a last resort after checking the applicable safe automatic routes, not a default way to finish. It satisfies Codex's execution/packaging responsibility, not receipt by ChatGPT. Mark delivery pending_human_relay, include the concrete failed/unavailable/ambiguous route evidence, and never claim the origin received it. This alternative must be in the Goal from activation, not introduced later.
 - Early engineering blockers remain blockers; reporting them, automatically or manually, does not achieve the engineering objective or justify marking its Goal complete.
 
 After the opening, provide EXECUTION BRIEF with exact workspace/repository, necessary fixed BASE_SHA, scope, inputs, required work, validation/review, and any concrete restrictions explicitly supplied by the user. Include FINAL RETURN TARGET and RETURN ROUTING explicitly.
 
 ## 5. Ordered return routing
 
-Apply the same routing procedure to successful final results and both legitimate early returns.
+Apply the same routing procedure to successful final results and both legitimate early returns. Before emitting pending_human_relay, inspect the return capabilities actually available to the receiving task and evaluate the applicable routes below. Do not skip safe automatic routing merely because parent-return is absent, a dispatch field says unavailable, or manual relay is easier. Capability inspection and a final message send are part of final delivery, not prohibited job-status polling. Do not send test messages to unverified candidates; route evaluation is not a demand to try every send tool.
 
 1. Prefer the existing task-native parent-return primitive only when its documented/runtime binding establishes that it reaches this dispatch's actual ChatGPT origin, not an intermediate Codex, Bridge, maintenance or control conversation.
 2. Otherwise use the conversation ID fixed and verified at dispatch, with an available messaging capability that accepts that identifier. Do not rediscover or replace a trustworthy fixed origin through title search. Confirm automatic delivery from the tool's documented result.
-3. Only if no usable trustworthy binding exists may available conversation search/list/read/message capabilities locate the origin. Require exact title equality, readable evidence of THIS dispatch matching its task identity, repository and full BASE_SHA where applicable, and exactly one verified candidate. Similar titles, same project, “most recent”, common task keywords or an older matching task are insufficient. Account for pagination, truncation and other unexcluded candidates; a partial search is not proof of uniqueness. If uniqueness or scope completeness cannot be established, use manual relay.
-4. If no safe route exists, emit the complete final result in the current Codex conversation for explicit human relay. Do not block authorized engineering or send to any uncertain target. Missing/renamed title, unreadable candidate context or conflicting identity also require manual relay.
+3. If no usable trustworthy binding exists, use available conversation search/list/read/message capabilities to try to establish the origin; this verification step is required when those capabilities and sufficient task context are available. Require exact title equality, readable evidence of THIS dispatch matching its task identity, repository and full BASE_SHA where applicable, and exactly one verified candidate. Similar titles, same project, “most recent”, common task keywords or an older matching task are insufficient. Account for pagination, truncation and other unexcluded candidates; a partial search is not proof of uniqueness. If uniqueness or scope completeness cannot be established, use manual relay.
+4. Only after applicable route verification shows no safe automatic route can be completed, emit the complete final result in the current Codex conversation for explicit human relay. Do not block authorized engineering or send to any uncertain target. Missing/renamed title, unreadable candidate context or conflicting identity also require manual relay.
 
 Never use a historical job's target, unverified/cached source_thread_id, guessed thread ID, fuzzy title or Bridge/control/maintenance thread as a shortcut. Never “try sending” to an uncertain conversation.
 
@@ -87,6 +87,10 @@ AUTOMATIC_RETURN_STATUS: unavailable | failed | unconfirmed
 RETURN_DELIVERY_STATUS: pending_human_relay
 RETURN_ACTION_REQUIRED: human relay to the specified originating ChatGPT conversation
 FINAL_RETURN_CONVERSATION_TITLE: <exact bound title, or unavailable>
+AUTOMATIC_RETURN_BLOCKER: <specific unavailable capability, failed send, unresolved target ambiguity, unconfirmed delivery, or explicit user prohibition>
+RETURN_ROUTE_EVIDENCE: <routes evaluated, observations and why no safe automatic delivery was completed; never claim an unattempted check or send occurred>
+
+A missing parent-return or bound ID alone is not sufficient justification when the receiver can verify the origin using available conversation capabilities. A generic 'automatic routing unavailable' without the concrete reason is not an adequate fallback conclusion. Honor a user's explicit manual-only/no-message instruction without attempting automatic delivery.
 
 Include all essential result content, not just a request to inspect the job later. Title unavailable means the user must carry the packet back to the conversation that issued THIS dispatch; do not invent its title. Engineering complete means all required authorized work and verification are complete. Engineering blocked means the requested objective remains incomplete, regardless of result delivery.
 
@@ -104,6 +108,7 @@ Verify internally before dispatch or presenting a prepare-only handoff as ready:
 - RETURN_ROUTING_ORDER_DEFINED = yes
 - PARENT_RETURN_PREFERRED_WHEN_ORIGIN_BOUND = yes
 - TITLE_CONTEXT_FALLBACK_DEFINED = yes
+- AUTOMATIC_RETURN_EVALUATION_REQUIRED_BEFORE_MANUAL_RELAY = yes
 - MANUAL_RELAY_FALLBACK_DEFINED = yes
 - NO_GUESSED_THREAD_ROUTING = yes
 - ALL_ARTIFACTS_HAVE_EXACT_LOCATORS = yes (yes when none are needed)
