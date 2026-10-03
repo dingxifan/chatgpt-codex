@@ -17,7 +17,7 @@
 | AGENTS.md | 安装端 Codex 的执行说明 |
 | INSTALL.md | 自动安装顺序与必须交互的步骤 |
 | bridge/ | 固定快照的原生桌面 Bridge 源码、锁文件、测试和原始 MIT 许可 |
-| plugin/codex-dispatch/ | 可导入账号的 Skill 插件 v0.1.6 |
+| plugin/codex-dispatch/ | 可导入账号的 Skill 插件 v0.1.7 |
 | scripts/Install.ps1 | 检查 Node、安装依赖、构建、本地 Skill 安装和配置生成 |
 | scripts/Start-Bridge.ps1 | 从当前 Codex 桌面上下文启动 Bridge |
 | scripts/Test-Bridge.mjs | 健康、就绪、新版探测降级、旧版初始化、工具集合和 artifact_put 验证 |
