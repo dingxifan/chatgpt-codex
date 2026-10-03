@@ -1,0 +1,6 @@
+{
+  "workspaceRoots": ["C:\\projects\\my-project"],
+  "port": 8787,
+  "handoffRoot": ".local/handoff",
+  "allowedHosts": []
+}

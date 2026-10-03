@@ -1,0 +1,115 @@
+---
+name: codex-dispatch
+description: Prepare or dispatch ChatGPT-to-Codex handoffs when the user asks to hand off, send, delegate, execute, implement, or continue work in Codex or Codex Bridge, or generate an execution brief or manual handoff. Require Goal activation, bind the origin at dispatch, use exact artifact locators, return safely with human-relay fallback, and stop after dispatch without automatic polling. Exclude conceptual Codex/Bridge discussion, design without a handoff, explanations of past polling, and status-only queries.
+---
+
+# Codex Dispatch
+
+Prepare a complete handoff; dispatch only when the user requests actual execution.
+
+## 1. Mode and execution truth
+
+- Prepare-only: generate the full execution instruction for manual transfer; do not call codex_start.
+- Dispatch: generate the full instruction and call codex_start once with the exact workspace and instruction. Requests to continue work use the same contract and do not authorize repeated dispatch.
+- Status-only: an explicit request such as “查一下”, “看状态”, or “取结果” permits one appropriate codex_get snapshot for the identified job, without new dispatch or recurring monitoring.
+
+Resolve objective, repository/workspace, scope, authoritative references, required validation/review, and any concrete task restrictions explicitly supplied by the user. Fix the full BASE_SHA before dispatch when repository truth requires a baseline; never substitute floating HEAD, main, or “latest”. Resolve a missing required baseline before dispatch. Preserve the user's task identity; if none exists, assign a label explicitly as this handoff's task label, not as a repository or HACT record. Distinguish repeated dispatches of the same task in the prompt without creating a registry.
+
+## 2. Capture and bind the origin before dispatch
+
+The origin is the current ChatGPT conversation issuing THIS dispatch, not the receiving Codex conversation. Capture its exact title and any accurate conversation ID or native return binding from trustworthy current-session/runtime metadata. Record the evidence establishing that the identifier belongs to this origin and this dispatch. A user-supplied identifier must explicitly identify this task's origin; resolve any conflict instead of silently changing destinations.
+
+Do not search history to manufacture a current-session binding. Do not invent IDs, return handles, or codex_start parameters. When the actual tool accepts only workspace and prompt, put verified origin information in the prompt; only the runtime can provide a native parent binding. Record absent title, ID, binding, or transport capability as unavailable. Missing return transport or source metadata does not block otherwise authorized engineering; preserve the semantic origin and use manual relay if necessary.
+
+Keep origin identity separate from transport capability: an accurate ID is not proof a messaging tool accepts it, and a tool named notify_parent is not proof it returns to ChatGPT. A source_thread_id is usable only if trustworthy evidence establishes that it identifies this dispatch's actual originating ChatGPT conversation. A routable Bridge/runtime thread is not automatically that origin.
+
+Every handoff includes:
+
+FINAL RETURN TARGET
+Semantic identity: The ChatGPT conversation that dispatched THIS task.
+Conversation title: <exact current origin title, or unavailable>
+Bound conversation ID: <verified origin ID, or unavailable>
+Parent-return binding: <existing runtime binding, or unavailable>
+Binding evidence: <current-dispatch evidence, or unavailable>
+Known return transport: <verified available capability, or unavailable>
+Task identity: <task identity and this handoff's distinguishing context>
+Repository / workspace: <exact repository and workspace>
+BASE_SHA: <full fixed SHA when required, otherwise not applicable>
+
+Replace fields with observed facts. Conversation title is a routing hint and disambiguation signal, not by itself a guaranteed unique identifier. Metadata explicitly marked unavailable is permitted; guessed metadata is not.
+
+## 3. Artifacts before the final instruction
+
+For long ChatGPT-generated Markdown, designs, reports, or other text not already available to Codex, call artifact_put or an existing equivalent text-drop capability BEFORE composing the final instruction, including in prepare-only mode. Use the successful result's exact readable file/path locator, filename, purpose, intended destination/action, and returned digest when available. Reuse a persisted artifact only when its exact locator and intended content are established. Do not repeatedly transfer long bodies through GitHub connectors or the execution prompt.
+
+Every required input artifact needs an exact locator. Never use “see attachment”, “the file above”, “the previous design document”, or equivalent. Missing required artifact locators block dispatch and prevent presenting a manual handoff as ready. State Artifacts: none when none are required. Tell Codex to verify readability and supplied digests before applying artifacts; do not silently substitute a similarly named copy.
+
+## 4. Mandatory Goal and execution brief
+
+Every handoff starts with MANDATORY GOAL ACTIVATION and tells the receiver:
+
+Before substantive analysis, file modification, command execution, Git operations, review, or implementation, establish the following /goal in this Codex conversation. Do not begin substantive work until the Goal is active. Use actual Goal activation; repeating the command is not activation. If activation cannot be established, do not begin engineering and report the limitation through the return procedure below.
+
+Do not add generic authorization or approval instructions to the generated /goal or execution brief. In particular, do not write “ask for authorization when required”, “request Human Authority”, “follow the receiving window's permissions”, or equivalent boilerplate. Do not manufacture or exhaustively enumerate authorized actions or actions requiring approval. Carry forward the user's concrete task instructions, including explicit permissions, restrictions and reserved decisions, without manufacturing a general approval policy or expanding their scope. Leave the receiving session's existing configuration and instructions to govern execution without restating them in the handoff.
+
+Generate one concrete /goal containing the objective, scope and applicable BASE_SHA, autonomous execution, and the following requirements INSIDE the Goal:
+
+- Ordinary engineering problems remain in the receiving Codex conversation.
+- Return only for unresolved required product/core technical semantics, objective inability to finish after reasonable attempts, or completed work ready for final delivery.
+- Preserve the explicit origin bound for THIS task and the ordered return procedure below; never guess a ChatGPT target.
+- Unavailable return transport does not block authorized engineering work or count as an engineering CAPABILITY blocker.
+- Successful execution requires the requested outcome, required verification/review, and immutable repository delivery when applicable, plus either confirmed automatic final delivery to the verified origin or emission of the complete immutable final result for explicit human relay when safe automatic delivery is unavailable.
+- Manual fallback satisfies Codex's execution/packaging responsibility, not receipt by ChatGPT. Mark delivery pending_human_relay and never claim the origin received it. This alternative must be in the Goal from activation, not introduced later.
+- Early engineering blockers remain blockers; reporting them, automatically or manually, does not achieve the engineering objective or justify marking its Goal complete.
+
+After the opening, provide EXECUTION BRIEF with exact workspace/repository, necessary fixed BASE_SHA, scope, inputs, required work, validation/review, and any concrete restrictions explicitly supplied by the user. Include FINAL RETURN TARGET and RETURN ROUTING explicitly.
+
+## 5. Ordered return routing
+
+Apply the same routing procedure to successful final results and both legitimate early returns.
+
+1. Prefer the existing task-native parent-return primitive only when its documented/runtime binding establishes that it reaches this dispatch's actual ChatGPT origin, not an intermediate Codex, Bridge, maintenance or control conversation.
+2. Otherwise use the conversation ID fixed and verified at dispatch, with an available messaging capability that accepts that identifier. Do not rediscover or replace a trustworthy fixed origin through title search. Confirm automatic delivery from the tool's documented result.
+3. Only if no usable trustworthy binding exists may available conversation search/list/read/message capabilities locate the origin. Require exact title equality, readable evidence of THIS dispatch matching its task identity, repository and full BASE_SHA where applicable, and exactly one verified candidate. Similar titles, same project, “most recent”, common task keywords or an older matching task are insufficient. Account for pagination, truncation and other unexcluded candidates; a partial search is not proof of uniqueness. If uniqueness or scope completeness cannot be established, use manual relay.
+4. If no safe route exists, emit the complete final result in the current Codex conversation for explicit human relay. Do not block authorized engineering or send to any uncertain target. Missing/renamed title, unreadable candidate context or conflicting identity also require manual relay.
+
+Never use a historical job's target, unverified/cached source_thread_id, guessed thread ID, fuzzy title or Bridge/control/maintenance thread as a shortcut. Never “try sending” to an uncertain conversation.
+
+If an automatic send fails definitively without delivery, another verified route may be used. If its outcome is ambiguous, do not resend or switch routes automatically: emit the manual result, mark automatic status unconfirmed, and explain possible prior delivery to avoid duplicate relay. Do not resolve ambiguity through automatic polling.
+
+## 6. Final result and manual relay
+
+Freeze the conclusion against the actual task evidence: task identity, repository/workspace, applicable BASE_SHA and RESULT_SHA, actual files changed, outcome, verification/review, blockers and remaining limitations. If no commit exists, say so and do not invent RESULT_SHA. Use exact locators/digests for any separately persisted result artifact. No formal persistent Result Packet schema is required.
+
+When using manual fallback, include:
+ENGINEERING_STATUS: complete | blocked
+AUTOMATIC_RETURN_STATUS: unavailable | failed | unconfirmed
+RETURN_DELIVERY_STATUS: pending_human_relay
+RETURN_ACTION_REQUIRED: human relay to the specified originating ChatGPT conversation
+FINAL_RETURN_CONVERSATION_TITLE: <exact bound title, or unavailable>
+
+Include all essential result content, not just a request to inspect the job later. Title unavailable means the user must carry the packet back to the conversation that issued THIS dispatch; do not invent its title. Engineering complete means all required authorized work and verification are complete. Engineering blocked means the requested objective remains incomplete, regardless of result delivery.
+
+Only after engineering success and either confirmed automatic delivery or complete explicit manual-relay emission may Codex mark the Goal complete under its activated completion contract. Never equate pending manual relay with confirmed return-to-origin delivery.
+
+## 7. Pre-dispatch checks and stop
+
+Verify internally before dispatch or presenting a prepare-only handoff as ready:
+- GOAL_PRESENT = yes
+- RETURN_TARGET_PRESENT = yes
+- ORIGIN_CAPTURE_ATTEMPTED = yes
+- ORIGIN_BINDING_VERIFIED_OR_EXPLICITLY_UNAVAILABLE = yes
+- RETURN_CONVERSATION_TITLE_RECORDED_OR_UNAVAILABLE = yes
+- RETURN_IS_PART_OF_GOAL_AND_HANDOFF_COMPLETION = yes
+- RETURN_ROUTING_ORDER_DEFINED = yes
+- PARENT_RETURN_PREFERRED_WHEN_ORIGIN_BOUND = yes
+- TITLE_CONTEXT_FALLBACK_DEFINED = yes
+- MANUAL_RELAY_FALLBACK_DEFINED = yes
+- NO_GUESSED_THREAD_ROUTING = yes
+- ALL_ARTIFACTS_HAVE_EXACT_LOCATORS = yes (yes when none are needed)
+- BASE_SHA_FIXED_WHEN_REQUIRED = yes (yes when not applicable)
+- NO_AUTOMATIC_POLLING = yes
+
+No parent-return capability is a prerequisite. Resolve missing required engineering facts or artifact locators before dispatch; explicit unavailable return metadata is not such a blocker. Checks remain Skill-local: do not create HACT state, persistent checklists, receipts, registries, callbacks, watchers, routing services, schedulers or new lifecycle machinery.
+
+In Dispatch mode call codex_start once. On success report the returned job/thread identifier and end the normal dispatch workflow. Do not proactively codex_get, wake/probe or use equivalent polling because the job runs long, results are absent or progress is unknown. Dispatch failure or ambiguity is reported without automatic redispatch. Only explicit user-requested status/result inspection authorizes codex_get; one request does not authorize recurring monitoring.

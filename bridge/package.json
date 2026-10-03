@@ -1,0 +1,36 @@
+{
+  "name": "codex-from-chatgpt",
+  "version": "0.3.1",
+  "private": true,
+  "description": "Personal MCP bridge for using local Codex from ChatGPT",
+  "license": "MIT",
+  "author": "Antonio Ulloa",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "tsx": "4.23.11",
+    "typescript": "7.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joseanu/codex-from-chatgpt.git"
+  },
+  "homepage": "https://github.com/joseanu/codex-from-chatgpt#readme",
+  "bugs": {
+    "url": "https://github.com/joseanu/codex-from-chatgpt/issues"
+  }
+}
