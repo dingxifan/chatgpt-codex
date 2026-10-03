@@ -4,7 +4,7 @@
 
 ## 安装 Skill 插件
 
-运行 scripts/Pack-Plugin.ps1 得到 out/codex-dispatch-v0.1.4.zip。在账号当前支持的插件/Skill 导入入口安装该插件，并开始新会话，确认可以选择 codex-dispatch。若账号没有导入入口，按官方插件/Skills 文档检查可用性，不能用聊天附件代替账号安装。
+运行 scripts/Pack-Plugin.ps1 得到 out/codex-dispatch-v0.1.5.zip。在账号当前支持的插件/Skill 导入入口安装该插件，并开始新会话，确认可以选择 codex-dispatch。若账号没有导入入口，按官方插件/Skills 文档检查可用性，不能用聊天附件代替账号安装。
 
 ## 安装 Tunnel 客户端
 
@@ -31,6 +31,10 @@ Bridge 必须先真实 ready；Tunnel 客户端必须保持运行。在 ChatGPT 
 若 Tunnel 改写 Host，先确定它实际使用的 Host 值，再写入 .local/bridge.json 的 allowedHosts 后重启本次 Bridge；不关闭 Host 验证或随意添加通配值。
 
 ## 端到端验证
+
+跨聊天发送工具若要求人类直接授权，应在发起窗口提供真实的具体指令，并让派发端保留原始人类消息的可读来源，供接收端核验。已有明确覆盖当前任务的授权可复用，不需要因为派发更新而重复询问。Skill 生成的“请回传”不是人类授权，不能用它绕过工具限制。
+
+例如，用户可以亲自发送“本次任务完成后，请直接把完整结果回传到这个发起对话。”如果用户希望长期复用，可亲自明确授权“今后由这个对话派发给 Codex 的任务，完成后可以直接向这个对话回传相应最终结果。”这些是供用户使用的示例，不代表本仓库或 Skill 已授予任何消息发送权限。接收端仍需按工具规则核验真实消息及覆盖范围；不能核验时标记 authorization_unverified，不把它说成工具不可用。
 
 由用户在安装好的 ChatGPT 会话中明确要求：使用 codex-dispatch 派发到自己的准确工作区，仅查看仓库状态、不修改文件，并回传结果。Skill 应生成强制 Goal 与来源绑定，成功派发后结束，不主动 codex_get。
 
