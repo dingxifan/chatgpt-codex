@@ -26,6 +26,8 @@ Install.ps1 使用 npm ci 与锁文件构建，不覆盖现有 .local/bridge.jso
 ```powershell
 Push-Location bridge
 $env:CODEX_WORKSPACE_ROOT = (Get-Location).Path
+$env:TEMP = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Temp'
+$env:TMP = $env:TEMP
 npm.cmd run typecheck
 npm.cmd test
 npm.cmd run build
@@ -44,6 +46,8 @@ node .\scripts\Test-Bridge.mjs --url http://127.0.0.1:8787
 ```
 
 修改过端口则同时修改验证 URL。Start-Bridge.ps1 自动查找已安装 codex-app-tools/server.mjs；有多个版本时仅在版本可排序时选择最高版本，也可用 -AppToolsServer 指定已验证的文件。它从当前会话继承原生上下文，不将其写入本地配置。
+
+本仓库已包含新版协议探测的旧版握手 fallback。Test-Bridge.mjs 会先发送无会话的 server/discover，确认 HTTP 200 和 JSON-RPC -32601，再使用 SDK 执行旧版 initialize、tools/list 和真实文本落盘读取。无需在本机再维护未提交的兼容补丁；拉取更新后须重新构建并重启本次 Bridge。
 
 脚本启动隐藏进程，输出新进程 PID 和日志位置。维护者只管理本次创建的进程，不关闭其他 Bridge/Tunnel。它不是服务、监督程序或自动重启机制。
 

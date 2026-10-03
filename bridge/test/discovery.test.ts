@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { isServerDiscoverRequest, serverDiscoverResponse } from "../src/discovery.js";
+import { isServerDiscoverRequest, legacyDiscoveryFallback } from "../src/discovery.js";
 
 test("recognizes a modern MCP server/discover request", () => {
   assert.equal(
@@ -21,15 +21,9 @@ test("recognizes a modern MCP server/discover request", () => {
   assert.equal(isServerDiscoverRequest({ jsonrpc: "2.0", id: 1, method: "initialize" }), false);
 });
 
-test("discovery advertises the supported legacy handshake protocol", () => {
-  const response = serverDiscoverResponse("openai-mcp-discover");
+test("modern discovery receives method-not-found so the client can use the legacy handshake", () => {
+  const response = legacyDiscoveryFallback("openai-mcp-discover");
 
   assert.equal(response.id, "openai-mcp-discover");
-  assert.equal(response.result.resultType, "complete");
-  assert.deepEqual(response.result.supportedVersions, ["2025-11-25"]);
-  assert.deepEqual(response.result.capabilities, { tools: { listChanged: false } });
-  assert.deepEqual(response.result._meta["io.modelcontextprotocol/serverInfo"], {
-    name: "Codex Agent",
-    version: "0.3.1",
-  });
+  assert.deepEqual(response.error, { code: -32601, message: "Method not found" });
 });

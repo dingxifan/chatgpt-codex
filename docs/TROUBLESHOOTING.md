@@ -11,6 +11,7 @@
 | 同名 Skill 不同 | 比较内容，只有明确更新时才使用 -UpdateSkill；脚本先备份旧文件 |
 | ChatGPT 无插件导入入口 | 检查账号和工作区可用性；本地 Skill 发现与账号插件安装是两件事 |
 | ChatGPT 看不到 Tunnel | 核对自己的 Platform 组织角色和目标 ChatGPT 工作区关联 |
+| 新版协议探测后无法连接 | 使用包含 discovery fallback 的仓库版本，重新构建并从当前桌面会话重启该 Bridge。server/discover 应返回 HTTP 200 和 JSON-RPC -32601；客户端随后使用旧版 initialize，不应把完整新版协议能力当成已实现 |
 | 回传能力缺失 | 按 Skill 完成工程后输出人工搬运结果；不通过历史 ID 猜来源，不自动查询 |
 
 不修改全局权限、模型或旧配置来绕过故障。测试失败不能报告 LOCAL_READY；账号连接和端到端任务未验证则保持 pending。

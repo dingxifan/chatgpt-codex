@@ -20,7 +20,7 @@
 | plugin/codex-dispatch/ | 可导入账号的 Skill 插件 v0.1.4 |
 | scripts/Install.ps1 | 检查 Node、安装依赖、构建、本地 Skill 安装和配置生成 |
 | scripts/Start-Bridge.ps1 | 从当前 Codex 桌面上下文启动 Bridge |
-| scripts/Test-Bridge.mjs | 健康、就绪、MCP 工具集合和 artifact_put 验证 |
+| scripts/Test-Bridge.mjs | 健康、就绪、新版探测降级、旧版初始化、工具集合和 artifact_put 验证 |
 | scripts/Pack-Plugin.ps1 | 生成供 ChatGPT 导入的插件 ZIP |
 | config/bridge.example.json | 不含凭据的本机配置模板 |
 | docs/CONNECT-CHATGPT.md | 用户自己的 Tunnel 和 ChatGPT 连接步骤 |

@@ -7,7 +7,7 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { ArtifactStore } from "./artifacts.js";
 import { DesktopCodex } from "./desktop.js";
 import { runtimeConfig, SERVICE_NAME } from "./config.js";
-import { isServerDiscoverRequest, serverDiscoverResponse } from "./discovery.js";
+import { isServerDiscoverRequest, legacyDiscoveryFallback } from "./discovery.js";
 import { createMcpServer } from "./mcp.js";
 
 type Session = {
@@ -58,7 +58,7 @@ async function main(): Promise<void> {
         return;
       }
       if (!sessionId && isServerDiscoverRequest(body)) {
-        writeJson(response, 200, serverDiscoverResponse(body.id));
+        writeJson(response, 200, legacyDiscoveryFallback(body.id));
         return;
       }
       let session = sessionId ? sessions.get(sessionId) : undefined;
