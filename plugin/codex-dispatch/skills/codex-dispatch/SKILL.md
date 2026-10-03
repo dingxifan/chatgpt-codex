@@ -43,11 +43,21 @@ Replace fields with observed facts. Conversation title is a routing hint and dis
 
 Using this Skill means the requested workflow includes dispatch, execution and final-result return to THAT task's verified originating conversation. Every generated handoff must explicitly tell the receiving Codex to complete that final return itself; do not wait for a second “send it yourself” instruction.
 
-Do not add Skill-specific return authorization fields, consent questions, agreement acceptance steps, authorization checklists or a separate approval gate. Do not postpone return merely because the human did not repeat a complete permission sentence before a proactive Skill dispatch. Preserve actual user directions and any available original-human-message references as ordinary task context, without manufacturing evidence or creating a permission registry.
+Do not add blanket Skill-specific authorization fields, routine consent questions, agreement acceptance steps, authorization checklists or a separate approval gate. A focused question resolving an actual return ambiguity or a real tool authorization requirement is handled below, not imposed on every task. Do not postpone return merely because the human did not repeat a complete permission sentence before a proactive Skill dispatch. Preserve actual user directions and any available original-human-message references as ordinary task context, without manufacturing evidence or creating a permission registry.
 
 Use the available return capability under its existing tool contract. This Skill adds no extra authorization layer and does not remove runtime/tool restrictions. If a tool requires direct human authorization, rely on applicable actual human instructions or other trusted evidence allowed by that tool; a generated handoff or model-selected Skill is not a fabricated human grant. Do not send when the tool's requirement is unmet, or falsely label delegated text as human consent. Report a real tool-enforced authorization obstacle accurately, without representing it as missing transport.
 
 Honor explicit user restrictions such as manual-only or no-message requests. A native parent-return primitive follows its own contract. The default covers only this task's final result to its verified origin, not other messages, recipients or broader engineering actions.
+
+### Proactively ask when final return is unclear
+
+If a usable messaging tool exists but the final send's intent or required human authorization is unclear/unverified, proactively ask the human directly in the receiving Codex conversation before choosing manual relay and ending. With a verified target, ask once for the exact action: “The final result is ready. May I send this task's complete result to <exact verified origin title/identity>?” Use an available user-input capability suitable for authorization, or a clear question in the conversation. Do not use an optional-preference-only question tool for permission.
+
+If the origin cannot be uniquely verified, ask the human to identify the exact originating conversation instead of proposing a guessed destination. Clarifying the target is separate from having permission to send. Do not ask whether to return when a valid applicable human instruction already establishes it, and do not reopen engineering approvals.
+
+Continue independent authorized engineering and preserve the immutable result. For a required decision, wait for the human answer; silence or elapsed time is not consent. Do not send, declare delivery, mark the Goal complete, or turn the unanswered question into an automatic manual-relay conclusion. Ask only once for the same unresolved issue unless new facts materially change it.
+
+After a direct human instruction authorizes the specific send and the target is verified, send and confirm the actual tool result without another consent question. If the human chooses manual relay or forbids messaging, emit the complete result accordingly. If no interactive human-input channel is available, emit the complete result with the precise pending action and state that clarification/authorization could not be obtained; never claim a question was asked when it was not. An unavailable messaging tool may still justify manual fallback without an unnecessary send-permission question.
 
 ## 3. Artifacts before the final instruction
 
@@ -67,13 +77,13 @@ Generate one concrete /goal containing the objective, scope and applicable BASE_
 
 - Ordinary engineering problems remain in the receiving Codex conversation.
 - Return only for unresolved required product/core technical semantics, objective inability to finish after reasonable attempts, or completed work ready for final delivery.
-- Automatically deliver the final conclusion yourself to the verified origin for THIS task as the default completion workflow, using the ordered return procedure and the available tool's existing contract. Do not introduce an extra Skill authorization step or wait for another 'send it yourself'. Never guess the target, fabricate human permission, or override explicit user no-message restrictions or actual tool constraints.
+- Automatically deliver the final conclusion yourself to the verified origin for THIS task as the default completion workflow, using the ordered return procedure and the available tool's existing contract. Do not impose routine extra Skill authorization; if an actual return intent, target or tool-permission ambiguity remains, proactively ask the human in this receiving conversation once for the specific decision and wait before closing. Never guess the target, fabricate human permission, or override explicit user no-message restrictions or actual tool constraints.
 - Unavailable return transport does not block authorized engineering work or count as an engineering CAPABILITY blocker.
 - Successful execution requires the requested outcome, required verification/review, and immutable repository delivery when applicable, plus either confirmed authorized automatic final delivery to the verified origin or complete immutable local result emission identifying the transport, target or human-authorization obstacle preventing delivery.
 - If safe authorized automatic delivery cannot be completed after checking applicable routes, emit the complete immutable result with the exact blocker. A true transport/target fallback is pending_human_relay; when the tool exists but direct human authorization is absent or unverifiable, mark pending_human_authorization. Local result emission satisfies Codex's execution/packaging responsibility, not receipt by ChatGPT. Include the route/authorization facts and never claim delivery. These alternatives must be in the Goal from activation, not introduced later.
 - Early engineering blockers remain blockers; reporting them, automatically or manually, does not achieve the engineering objective or justify marking its Goal complete.
 
-The generated Goal's local-emission completion alternative includes authorization-required/unverified result emission as well as transport fallback; neither implies delivery to ChatGPT. Do not leave engineering blocked solely by message-send permission.
+The generated Goal must include the focused ask-and-wait behavior for actual return ambiguity. Its local-emission completion alternative applies to a human-selected manual return or an unavailable safe return/input channel, not to an unanswered required question. Neither local emission nor pending authorization implies delivery to ChatGPT. Engineering may finish independently of message-send permission; final handoff remains pending while an obtainable required human decision is unanswered.
 
 After the opening, provide EXECUTION BRIEF with exact workspace/repository, necessary fixed BASE_SHA, scope, inputs, required work, validation/review, and any concrete restrictions explicitly supplied by the user. Include FINAL RETURN TARGET and RETURN ROUTING explicitly; automatic final return is the default.
 
@@ -84,7 +94,7 @@ Apply the same routing procedure to successful final results and both legitimate
 1. Prefer the existing task-native parent-return primitive only when its documented/runtime binding establishes that it reaches this dispatch's actual ChatGPT origin, not an intermediate Codex, Bridge, maintenance or control conversation.
 2. Otherwise use the conversation ID fixed and verified at dispatch, with an available messaging capability that accepts that identifier, operating under its existing tool contract. Do not rediscover or replace a trustworthy fixed origin through title search. Confirm automatic delivery from the tool's documented result.
 3. If no usable trustworthy binding exists, use available conversation search/list/read/message capabilities to try to establish the origin; this verification step is required when those capabilities and sufficient task context are available. Require exact title equality, readable evidence of THIS dispatch matching its task identity, repository and full BASE_SHA where applicable, and exactly one verified candidate. Similar titles, same project, “most recent”, common task keywords or an older matching task are insufficient. Account for pagination, truncation and other unexcluded candidates; a partial search is not proof of uniqueness. If uniqueness or scope completeness cannot be established, use manual relay. Use the verified target under the sending tool's existing contract; do not add a separate Skill consent procedure.
-4. Only after applicable safe route evaluation or an actual tool constraint shows automatic return cannot be completed, emit the complete final result in the current Codex conversation. Use explicit human relay for transport/target failure; use pending_human_authorization when an available messaging tool lacks verified direct human permission. Do not block authorized engineering or send to any uncertain target. Missing/renamed title, unreadable candidate context or conflicting identity also require manual relay.
+4. Only after applicable safe route evaluation or an actual tool constraint shows automatic return cannot be completed, emit the complete final result in the current Codex conversation. Use explicit human relay for transport/target failure; when an available messaging tool lacks verified direct human permission and a human-input channel exists, ask directly and wait; use pending_human_authorization local fallback only if that channel is unavailable or the human explicitly chooses local handoff. Do not block authorized engineering or send to any uncertain target. Missing/renamed title, unreadable candidate context or conflicting identity also require manual relay.
 
 Never use a historical job's target, unverified/cached source_thread_id, guessed thread ID, fuzzy title or Bridge/control/maintenance thread as a shortcut. Never “try sending” to an uncertain conversation.
 
@@ -94,10 +104,10 @@ If an automatic send fails definitively without delivery, another verified route
 
 Freeze the conclusion against the actual task evidence: task identity, repository/workspace, applicable BASE_SHA and RESULT_SHA, actual files changed, outcome, verification/review, blockers and remaining limitations. If no commit exists, say so and do not invent RESULT_SHA. Use exact locators/digests for any separately persisted result artifact. No formal persistent Result Packet schema is required.
 
-When using manual fallback, include:
+When using local fallback, or reporting a real required return decision, include the applicable status:
 ENGINEERING_STATUS: complete | blocked
 AUTOMATIC_RETURN_STATUS: unavailable | failed | unconfirmed | authorization_required | authorization_unverified
-RETURN_DELIVERY_STATUS: pending_human_relay | pending_human_authorization
+RETURN_DELIVERY_STATUS: pending_human_relay | pending_human_authorization | awaiting_human_decision
 RETURN_ACTION_REQUIRED: human relay to the specified origin, or direct human authorization for the specific result send
 FINAL_RETURN_CONVERSATION_TITLE: <exact bound title, or unavailable>
 AUTOMATIC_RETURN_BLOCKER: <specific unavailable capability, failed send, unresolved target ambiguity, unconfirmed delivery, absent/unverifiable direct human authorization, or explicit user prohibition>
@@ -107,7 +117,7 @@ A missing parent-return or bound ID alone is not sufficient justification when t
 
 Include all essential result content, not just a request to inspect the job later. Title unavailable means the user must carry the packet back to the conversation that issued THIS dispatch; do not invent its title. Engineering complete means all required authorized work and verification are complete. Engineering blocked means the requested objective remains incomplete, regardless of result delivery.
 
-Only after engineering success and either confirmed automatic delivery or complete explicit local result emission with a truthful transport/target/authorization status may Codex mark the Goal complete under its activated completion contract. Never equate pending manual relay with confirmed return-to-origin delivery.
+Only after engineering success and either confirmed automatic delivery or complete explicit local result emission under the permitted fallback conditions may Codex mark the Goal complete under its activated completion contract. Never equate pending manual relay with confirmed return-to-origin delivery. A required question awaiting the human answer does not satisfy final-handoff completion.
 
 ## 7. Pre-dispatch checks and stop
 
@@ -123,7 +133,8 @@ Verify internally before dispatch or presenting a prepare-only handoff as ready:
 - TITLE_CONTEXT_FALLBACK_DEFINED = yes
 - AUTOMATIC_RETURN_EVALUATION_REQUIRED_BEFORE_MANUAL_RELAY = yes
 - RETURN_TO_VERIFIED_ORIGIN_IS_DEFAULT = yes
-- NO_SKILL_ADDED_RETURN_AUTHORIZATION_GATE = yes
+- NO_SKILL_ADDED_ROUTINE_RETURN_AUTHORIZATION_GATE = yes
+- ACTUAL_RETURN_AMBIGUITY_TRIGGERS_FOCUSED_HUMAN_QUESTION = yes
 - MANUAL_RELAY_FALLBACK_DEFINED = yes
 - NO_GUESSED_THREAD_ROUTING = yes
 - ALL_ARTIFACTS_HAVE_EXACT_LOCATORS = yes (yes when none are needed)
