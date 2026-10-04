@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { ArtifactStore, MAX_ARTIFACT_BYTES } from "./artifacts.js";
 import type { DispatchBackend } from "./desktop.js";
+import { lintDispatchPrompt } from "./dispatch-lint.js";
 
 function success(value: Record<string, unknown>) {
   return {
@@ -43,7 +44,7 @@ export function createMcpServer(manager: DispatchBackend, artifacts: ArtifactSto
     {
       title: "Dispatch task to Codex",
       description:
-        "Dispatch a task to Codex in an allowed local project path exposed by the desktop API. A successful dispatch completes the normal Bridge action. Send the caller prompt unchanged; do not wait for task completion. Do not poll codex_get automatically or proactively; use codex_get only when the user explicitly asks to inspect the job. Codex desktop handles execution and authorization; return instructions belong in the prompt. No private Codex process, callback or wake mechanism.",
+        "Dispatch a task to Codex in an allowed local project path exposed by the desktop API. Mandatory pre-dispatch LINT requires Goal activation, EXECUTION BRIEF, FINAL RETURN TARGET with an exact ChatGPT title, and RETURN ROUTING. DISPATCH_LINT_FAILED means no task was created: fix the reported fields before resubmitting. A successful dispatch completes the normal Bridge action. Send the caller prompt unchanged; do not wait for task completion. Do not poll codex_get automatically or proactively; use codex_get only when the user explicitly asks to inspect the job. Codex desktop handles execution and authorization; return instructions belong in the prompt. No private Codex process, callback or wake mechanism.",
       inputSchema: {
         workspace: z.string().min(1).describe("Absolute existing directory under an administratively configured allowed root."),
         prompt: z.string().min(1).describe("Complete task instruction, including any input file paths and return conditions."),
@@ -51,6 +52,8 @@ export function createMcpServer(manager: DispatchBackend, artifacts: ArtifactSto
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
     async ({ workspace, prompt }) => {
+      const errors = lintDispatchPrompt(prompt, process.env.CODEX_THREAD_ID);
+      if (errors.length) return { isError: true, ...success({ status: "failed", error_code: "DISPATCH_LINT_FAILED", errors }) };
       try {
         const result = await manager.start(workspace, prompt);
         return success({ job_id: result.job_id, ...(result.warning ? { warning: result.warning } : {}) });

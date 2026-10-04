@@ -49,6 +49,20 @@ node .\scripts\Test-Bridge.mjs --url http://127.0.0.1:8787
 
 本仓库已包含新版协议探测的旧版握手 fallback。Test-Bridge.mjs 会先发送无会话的 server/discover，确认 HTTP 200 和 JSON-RPC -32601，再使用 SDK 执行旧版 initialize、tools/list 和真实文本落盘读取。无需在本机再维护未提交的兼容补丁；拉取更新后须重新构建并重启本次 Bridge。
 
+升级到派发前 LINT 时，必须同时更新 Skill v0.1.9、重新构建并部署实际运行的 Bridge，然后按下节刷新连接元数据。只有文件更新不等于硬校验已生效。codex_start 入参不变，但旧的非结构化 prompt 会被拒绝；采用 Skill 的固定区块和行内字段模板。
+
+DISPATCH_LINT_FAILED 明确表示尚未调用桌面后端且没有创建任务。按 errors 的 rule/field/message 一次修正全部问题；没有准确来源标题时先取得真实信息，不猜窗口。修正后的提交允许继续，创建结果不明时仍禁止自动重派。auto 和用户明确选择的 manual 都受同一校验。
+
+| 检查 | 拒绝原因 |
+| --- | --- |
+| DL001 | 缺少 Goal 激活开头、/goal 或具体目标 |
+| DL002 | 缺少 ChatGPT 类型、准确标题或 ID/unavailable 声明；仍有占位符或只有“父窗口” |
+| DL003 | 把 Bridge 的 CODEX_THREAD_ID 当作 ChatGPT 收件人 |
+| DL004 | 两个区块的任务、仓库/工作区或 BASE_SHA 不一致，或 SHA 格式错误 |
+| DL005 | 区块缺失/乱序/重复、重复字段冲突，或 Return mode 不是 auto/manual |
+
+固定区块和行内字段格式见 [Skill](plugin/codex-dispatch/skills/codex-dispatch/SKILL.md)。本校验不确认标题/ID 的真实性、不扫描附件语义冲突，也不控制接收端后续发送动作。
+
 脚本启动隐藏进程，输出新进程 PID 和日志位置。维护者只管理本次创建的进程，不关闭其他 Bridge/Tunnel。它不是服务、监督程序或自动重启机制。
 
 ## 5. 连接 ChatGPT

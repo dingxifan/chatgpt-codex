@@ -7,6 +7,7 @@
 | 端口被占用 | 识别现有进程；使用其他端口并同步 Tunnel，不终止陌生服务 |
 | workspace allowed 但无法派发 | 用当前 list_projects 核对主路径；不能按项目名称猜，也不能把额外 root 重定向到主 root |
 | Task created 但无法显示 | 保留返回的 job_id，打开已创建任务；不要重复派发 |
+| DISPATCH_LINT_FAILED | 无任务创建。按结构化 errors 修正固定区块、准确标题、任务/BASE 信息或模式，再提交修正后的指令；不要原样重试或用技术父会话 ID 补洞。模板见当前 Skill |
 | Node/npm 不存在 | 安装 Node 20+ 后重新检测；PowerShell 下使用 npm.cmd |
 | 同名 Skill 不同 | 比较内容，只有明确更新时才使用 -UpdateSkill；脚本先备份旧文件 |
 | ChatGPT 无插件导入入口 | 检查账号和工作区可用性；本地 Skill 发现与账号插件安装是两件事 |

@@ -2,6 +2,8 @@
 
 让 ChatGPT 使用 codex-dispatch Skill，把任务交给使用者自己电脑上的 Codex 桌面应用。Bridge 只有 artifact_put、codex_start、codex_get 三个工具；派发成功后不自动查询任务。
 
+codex_start 现在先执行硬 LINT：缺少 Goal 或准确 ChatGPT 来源窗口、误用 Bridge 技术父会话 ID、任务信息不一致或回传模式不明时，返回 DISPATCH_LINT_FAILED，不创建任务。Skill v0.1.9 生成固定区块模板；旧式“返回父窗口”指令需要补齐后才能派发。校验器不证明标题真实，也不扫描附件语义或控制接收端之后的发送行为。
+
 ## 交给另一台机器的 Codex
 
 克隆或下载这个仓库，在 **Codex 桌面应用** 中打开它，发送：
@@ -17,7 +19,7 @@
 | AGENTS.md | 安装端 Codex 的执行说明 |
 | INSTALL.md | 自动安装顺序与必须交互的步骤 |
 | bridge/ | 固定快照的原生桌面 Bridge 源码、锁文件、测试和原始 MIT 许可 |
-| plugin/codex-dispatch/ | 可导入账号的 Skill 插件 v0.1.8 |
+| plugin/codex-dispatch/ | 可导入账号的 Skill 插件 v0.1.9 |
 | scripts/Install.ps1 | 检查 Node、安装依赖、构建、本地 Skill 安装和配置生成 |
 | scripts/Start-Bridge.ps1 | 从当前 Codex 桌面上下文启动 Bridge |
 | scripts/Test-Bridge.mjs | 健康、就绪、新版探测降级、旧版初始化、工具集合和 artifact_put 验证 |

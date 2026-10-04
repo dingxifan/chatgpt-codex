@@ -12,6 +12,29 @@ import { ArtifactStore } from "../src/artifacts.js";
 import type { DispatchBackend } from "../src/desktop.js";
 import { createMcpServer } from "../src/mcp.js";
 
+const validHandoff = `MANDATORY GOAL ACTIVATION
+Activate the Goal before substantive work.
+/goal Verify the fixture and deliver the result to FINAL RETURN TARGET using RETURN ROUTING.
+
+EXECUTION BRIEF
+Task identity: fixture-001
+Repository / workspace: example/project / /allowed/project
+BASE_SHA: ${"a".repeat(40)}
+Artifacts: none
+
+FINAL RETURN TARGET
+Conversation kind: ChatGPT
+Conversation title: Fixture origin chat
+Bound conversation ID: unavailable
+Task identity: fixture-001
+Repository / workspace: example/project / /allowed/project
+BASE_SHA: ${"a".repeat(40)}
+
+RETURN ROUTING
+Return mode: auto
+Verify the origin; never substitute the technical parent.
+`;
+
 test("MCP exposes only dispatch, text drop and explicit query", async () => {
   const root = mkdtempSync(path.join(tmpdir(), "codex-mcp-artifacts-"));
   let managerAccessed = false;
@@ -65,9 +88,9 @@ test("MCP exposes only dispatch, text drop and explicit query", async () => {
   }
 });
 
-test("dispatch acknowledges acceptance without waiting or reading results", async () => {
+for (const mode of ["auto", "manual"] as const) test(`valid ${mode} dispatch acknowledges once without waiting or reading results`, async () => {
   const root = mkdtempSync(path.join(tmpdir(), "codex-mcp-dispatch-"));
-  const prompt = "Execute autonomously.\nRead the existing file; return according to this instruction.\n不要轮询。";
+  const prompt = validHandoff.replace("Return mode: auto", `Return mode: ${mode}`).replaceAll("\n", "\r\n") + "补充说明：保留原始文本。\r\n";
   const calls: string[] = [];
   const manager = {
     async start(workspace: string, received: string) {
@@ -89,6 +112,38 @@ test("dispatch acknowledges acceptance without waiting or reading results", asyn
     await new Promise((resolve) => setTimeout(resolve, 20));
     assert.deepEqual(calls, ["start"]);
   } finally { await client.close(); await server.close(); }
+});
+
+test("LINT rejection creates no task, returns all findings and no job ID", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "codex-mcp-lint-"));
+  let calls = 0;
+  const manager = { start() { calls++; throw new Error("invalid handoff must never reach backend"); }, get() { calls++; throw new Error("LINT must not query jobs"); } } as unknown as DispatchBackend;
+  const server = createMcpServer(manager, new ArtifactStore(root));
+  const client = new Client({ name: "lint-test", version: "1.0" });
+  const [a, b] = InMemoryTransport.createLinkedPair();
+  await server.connect(b);
+  await client.connect(a);
+  const previousCaller = process.env.CODEX_THREAD_ID;
+  process.env.CODEX_THREAD_ID = "caller-codex-id";
+  try {
+    for (const prompt of [
+      "/goal Retire the feature and return its immutable result to the parent window.\nTASK\nPreserve historical evidence.",
+      validHandoff.replace("Bound conversation ID: unavailable", "Bound conversation ID: caller-codex-id"),
+    ]) {
+      const result = await client.callTool({ name: "codex_start", arguments: { workspace: "/allowed/project", prompt } });
+      assert.equal(result.isError, true);
+      assert.equal(result.structuredContent?.status, "failed");
+      assert.equal(result.structuredContent?.error_code, "DISPATCH_LINT_FAILED");
+      assert(Array.isArray(result.structuredContent?.errors));
+      if (prompt.startsWith("/goal")) assert((result.structuredContent!.errors as unknown[]).length > 1);
+      assert.equal("job_id" in result.structuredContent!, false);
+    }
+    assert.equal(calls, 0);
+  } finally {
+    if (previousCaller === undefined) delete process.env.CODEX_THREAD_ID;
+    else process.env.CODEX_THREAD_ID = previousCaller;
+    await client.close(); await server.close();
+  }
 });
 
 test("MCP artifact cleanup failure has an explicit error shape and no false success", async () => {

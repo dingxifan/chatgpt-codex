@@ -7,6 +7,8 @@ description: Prepare or dispatch ChatGPT-to-Codex handoffs when the user asks to
 
 Prepare a complete handoff; dispatch only when the user requests actual execution.
 
+**FORMAT IS MANDATORY FOR BRIDGE LINT.** Generate the fixed envelope in section 2 exactly: preserve the four section names/order and the inline field names. Do not rename, omit, translate the machine-parsed labels, replace them with free-form prose, put values on the following line, or wrap the envelope in a code fence. Engineering prose may be Chinese or another user-requested language. Check the actual fields before codex_start; formatting is a dispatch precondition, not optional style. Otherwise Bridge returns DISPATCH_LINT_FAILED and creates no task.
+
 ## 1. Mode and execution truth
 
 - Prepare-only: generate the full execution instruction for manual transfer; do not call codex_start.
@@ -19,25 +21,43 @@ Resolve objective, repository/workspace, scope, authoritative references, requir
 
 The origin is the current ChatGPT conversation issuing THIS dispatch, not the receiving Codex conversation. Capture its exact title and any accurate conversation ID or native return binding from trustworthy current-session/runtime metadata. Record the evidence establishing that the identifier belongs to this origin and this dispatch. A user-supplied identifier must explicitly identify this task's origin; resolve any conflict instead of silently changing destinations.
 
-Do not search history to manufacture a current-session binding. Do not invent IDs, return handles, or codex_start parameters. When the actual tool accepts only workspace and prompt, put verified origin information in the prompt; only the runtime can provide a native parent binding. Record absent title, ID or binding as unavailable, and an unestablished transport as not established at dispatch. These describe the sender's knowledge at dispatch, not the receiving Codex environment's final capabilities. Missing return transport or source metadata does not block otherwise authorized engineering; preserve the semantic origin, inspect the receiver's available return capabilities at final handoff, and use manual relay only after the routing procedure establishes that safe automatic return cannot be completed.
+Do not search history to manufacture a current-session binding. Do not invent IDs, return handles, or codex_start parameters. When the actual tool accepts only workspace and prompt, put verified origin information in the prompt; only the runtime can provide a native parent binding. Obtain the exact origin title before finalizing the handoff. Record an absent ID or binding as unavailable, and an unestablished transport as not established at dispatch. These describe the sender's knowledge at dispatch, not the receiving Codex environment's final capabilities. An absent ID/native transport does not block engineering; an unknown origin title blocks dispatch preparation under the envelope contract. Once dispatched, preserve the semantic origin, inspect the receiver's available return capabilities at final handoff, and use manual relay only after the routing procedure establishes that safe automatic return cannot be completed.
 
 Keep origin identity separate from transport capability: an accurate ID is not proof a messaging tool accepts it, and a tool named notify_parent is not proof it returns to ChatGPT. A source_thread_id is usable only if trustworthy evidence establishes that it identifies this dispatch's actual originating ChatGPT conversation. A routable Bridge/runtime thread is not automatically that origin.
 
-Every handoff includes:
+Every generated handoff uses the fixed sections and inline field syntax below, in this order. Replace every bracketed value with actual facts. Plain headings or Markdown heading prefixes are accepted; do not wrap the envelope in a code fence. Supplementary execution details may follow the EXECUTION BRIEF fields, and supplementary origin evidence may follow the FINAL RETURN TARGET fields.
+
+MANDATORY GOAL ACTIVATION
+Before substantive work, actually activate this Goal; do not begin before activation.
+/goal [Concrete objective including final delivery to FINAL RETURN TARGET per RETURN ROUTING.]
+
+EXECUTION BRIEF
+Task identity: [this task's identity]
+Repository / workspace: [repository and exact workspace]
+BASE_SHA: [full 40-character SHA, or not applicable]
+[Exact input locators, engineering scope, restrictions and validation.]
 
 FINAL RETURN TARGET
-Semantic identity: The ChatGPT conversation that dispatched THIS task.
-Conversation title: <exact current origin title, or unavailable>
-Bound conversation ID: <verified origin ID, or unavailable>
-Parent-return binding: <existing runtime binding, or unavailable>
-Binding evidence: <current-dispatch evidence, or unavailable>
-Known return transport: <verified available capability, or not established at dispatch>
-Task identity: <task identity and this handoff's distinguishing context>
-Repository / workspace: <exact repository and workspace>
-BASE_SHA: <full fixed SHA when required, otherwise not applicable>
+Conversation kind: ChatGPT
+Conversation title: [exact originating ChatGPT title]
+Bound conversation ID: [verified originating ChatGPT ID, or unavailable]
+Task identity: [identical to EXECUTION BRIEF]
+Repository / workspace: [identical to EXECUTION BRIEF]
+BASE_SHA: [identical to EXECUTION BRIEF]
 
-Replace fields with observed facts. Conversation title is a routing hint and disambiguation signal, not by itself a guaranteed unique identifier. Metadata explicitly marked unavailable is permitted; guessed metadata is not.
+RETURN ROUTING
+Return mode: auto
+[Ordered safe return procedure, genuine tool constraints, focused ask behavior and permitted fallback.]
 
+Use auto by default; use manual only when the human expressly chooses manual handoff. Preserve that choice in both the Goal and routing instructions. An unavailable ID is allowed; an absent/unknown title is not ready for dispatch or manual execution. Obtain the actual origin title rather than substituting “parent window” or guessing one. A title is a routing hint, not proof of uniqueness; receiving Codex must still verify the actual origin before sending. Source evidence and native return bindings may be included as supplementary facts, never as substitutes for the required target.
+
+### Mandatory pre-dispatch LINT
+
+Bridge rejects malformed handoffs BEFORE any desktop dispatch with status failed, error_code DISPATCH_LINT_FAILED, errors containing rule/field/message, and no job_id. It checks Goal opening, actual target fields, technical caller-ID misuse, repeated/mismatched task/workspace/baseline fields and return mode. It does not prove the title/ID is true, activate the Goal itself, inspect arbitrary input artifacts for semantic conflicts or enforce the receiver's later behavior.
+
+On DISPATCH_LINT_FAILED, correct the specifically reported fields from known task/origin truth and then submit the corrected handoff. This is a proven no-task-created rejection, so a corrected submission is permitted; do not resend the unchanged rejected prompt or automatically retry a creation whose outcome is uncertain. Do not invent an origin, use a bypass or change the task's semantics merely to pass. Missing required facts must be obtained before dispatch.
+
+Sender-side preparation must reconcile any artifact versus outer-instruction return conflict using the human's actual directions. Do not emit contradictory manual and automatic return requirements or use a CONFLICT_RESOLVED flag instead of resolving the input.
 
 ### Automatic return is the default workflow
 
@@ -139,8 +159,9 @@ Verify internally before dispatch or presenting a prepare-only handoff as ready:
 - NO_GUESSED_THREAD_ROUTING = yes
 - ALL_ARTIFACTS_HAVE_EXACT_LOCATORS = yes (yes when none are needed)
 - BASE_SHA_FIXED_WHEN_REQUIRED = yes (yes when not applicable)
+- FIXED_DISPATCH_ENVELOPE_PRESENT = yes
 - NO_AUTOMATIC_POLLING = yes
 
 No parent-return capability is a prerequisite. Resolve missing required engineering facts or artifact locators before dispatch; explicit unavailable return metadata is not such a blocker. Checks remain Skill-local: do not create HACT state, persistent checklists, receipts, registries, callbacks, watchers, routing services, schedulers or new lifecycle machinery.
 
-In Dispatch mode call codex_start once. On success report the returned job/thread identifier and end the normal dispatch workflow. Do not proactively codex_get, wake/probe or use equivalent polling because the job runs long, results are absent or progress is unknown. Dispatch failure or ambiguity is reported without automatic redispatch. Only explicit user-requested status/result inspection authorizes codex_get; one request does not authorize recurring monitoring.
+In Dispatch mode call codex_start once. On success report the returned job/thread identifier and end the normal dispatch workflow. Do not proactively codex_get, wake/probe or use equivalent polling because the job runs long, results are absent or progress is unknown. Uncertain dispatch failure or ambiguity is reported without automatic redispatch; a proven DISPATCH_LINT_FAILED rejection permits one corrected submission after fixing its reported issues. Only explicit user-requested status/result inspection authorizes codex_get; one request does not authorize recurring monitoring.
