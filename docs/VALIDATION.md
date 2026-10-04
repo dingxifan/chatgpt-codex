@@ -65,3 +65,5 @@ typecheck/build 通过，31 项测试通过。首次全量测试因未设置测�
 39 项测试、typecheck/build 和安装包装测试通过。MCP 模拟后端证明：这次真实错窗指令的精简形态（仅 /goal 和“返回父窗口”）被拒绝、后端调用 0 次；合格 auto/manual 指令各调用 1 次、CRLF/中文文本原样保留且不读取 Job；技术父会话 ID、信息不一致、重复冲突、占位符和代码块中的伪模板被拒绝。首次解析器漏识别 BASE_SHA 下划线，由通过样例测试发现并修正。
 
 独立端口通过真实 discovery fallback、旧版初始化、三个工具集合和文本落盘读取检查。没有创建真实 Codex 验证任务或调用 codex_get。校验器不证明目标标题/ID 真伪，不执行 Goal 激活，不读取任意附件作语义扫描，也不控制接收端以后发送消息或模型派发后主动查询的行为。
+
+本机实际运行副本已备份并部署：校验器源码 SHA-256 与仓库一致，运行副本 typecheck/build 通过，只重启 Bridge，Tunnel 与既有桌面任务保留。部署后的编译模块使用模拟后端复验了旧式错误指令拒绝、0 后端调用、无 job_id；真实 MCP 协议/工具/文本落盘链路通过。已有连接已刷新，新 ChatGPT 会话直接依据本轮工具定义确认 codex_start 包含 Mandatory pre-dispatch LINT 和 DISPATCH_LINT_FAILED；该会话未调用工具、未派发任务或查询 Job。
