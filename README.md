@@ -35,4 +35,6 @@
 
 本仓库不包含任何人的登录信息、Tunnel 密钥、任务历史、账号插件 ID 或工作区配置。插件 ZIP 安装不会自动完成 ChatGPT MCP 连接。
 
+**安装/更新条件：必须核验 ChatGPT 实际加载的工具目录。**本机 Bridge 正常、页面显示 Connected、或 Skill 已更新，都不代表账号中的旧 MCP 工具定义已经刷新。已有连接应重新扫描工具，并在新会话确认只有 artifact_put、codex_start、codex_get，没有 wake_probe 和 since_revision，且 codex_get 明确禁止自动轮询。步骤见 [工具元数据刷新](docs/CONNECT-CHATGPT.md#工具元数据刷新安装及更新条件)。
+
 官方参考：[Skills](https://learn.chatgpt.com/docs/build-skills)、[插件](https://learn.chatgpt.com/docs/plugins)、[Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels)。

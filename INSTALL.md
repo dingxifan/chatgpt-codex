@@ -55,12 +55,15 @@ node .\scripts\Test-Bridge.mjs --url http://127.0.0.1:8787
 
 继续 [CONNECT-CHATGPT.md](docs/CONNECT-CHATGPT.md)。安装插件包与连接 MCP 是两个步骤；每位使用者有自己的账号连接和本地执行目标。
 
+已有连接尤其要完成该文档中的工具元数据刷新和新会话核验。本地 Test-Bridge.mjs 只能证明本机服务的实际定义，不能证明 ChatGPT 保存的定义已更新；Connected 或 Connect/Disconnect 也不能代替工具目录核验。此步骤未完成时报告 pending，不宣称全部安装完成。
+
 ## 6. 完成标准
 
 - 本地代码构建/测试通过。
 - /readyz 表示 desktop_connected=true。
 - Test-Bridge.mjs 通过真实 tools/list，集合恰好是三个指定工具，并成功读取文本落盘结果。
 - ChatGPT 账号已安装 Skill，连接后的工具可见。
+- ChatGPT 新会话实际加载的定义只有 artifact_put、codex_start、codex_get；无 wake_probe、无 since_revision，且 codex_get 明确禁止自动轮询。
 - 经用户明确发起的只读任务确实进入正确工作区，结果成功返回或明确供人工搬运。
 
 按实际证据报告阶段状态。新机器兼容性、账号权限及原生回传能力可能不同，不能从本仓库测试结果推定它们可用。

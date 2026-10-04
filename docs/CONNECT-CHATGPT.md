@@ -30,6 +30,29 @@ Bridge 必须先真实 ready；Tunnel 客户端必须保持运行。在 ChatGPT 
 
 若 Tunnel 改写 Host，先确定它实际使用的 Host 值，再写入 .local/bridge.json 的 allowedHosts 后重启本次 Bridge；不关闭 Host 验证或随意添加通配值。
 
+## 工具元数据刷新（安装及更新条件）
+
+ChatGPT 可以继续保存旧工具定义，即使本机 Bridge 已更新并连接成功；更新 Skill 不会自动更新另一个 MCP 连接的工具目录。旧版 codex_get 的轮询说明、since_revision 参数或 wake_probe 可能因此仍被提供给模型，与当前 Skill 冲突。安装/更新不能只验证本机服务，也必须验证 ChatGPT 实际加载的定义。
+
+1. 先确保实际运行的 Bridge 使用本仓库代码，并通过 Test-Bridge.mjs。包含 discovery fallback 的源码必须重新构建并重启到实际服务；只 git pull 或更新 Skill 不会更换已运行的旧程序。
+2. 在 ChatGPT 网页端打开现有 Codex Bridge 插件。2026-10-04 实际验证的自建开发连接入口是名称右侧 **⋯ → Manage → Refresh tools**，位于管理页的 Manage app 区域。Connected 菜单只管理连接，不应把 Connect/Disconnect 当作工具定义已刷新的证据。若界面没有该入口，确认是否为自己有管理权限的开发连接；工作区发布的 App 由管理员按其更新流程处理，不要自动删除或重复创建连接。
+3. 若出现 Couldn't update the app，不报告刷新成功。核对实际服务的协议响应：无会话 server/discover 应返回 HTTP 200 和 JSON-RPC -32601 Method not found，随后可执行旧版 initialize。本次实测本机仍运行旧 complete 响应时刷新失败，部署已验证的 fallback 后刷新与新会话核验成功。
+4. 完成扫描后使用新会话加载该连接，核验**本轮实际工具定义**，而非让模型按常识描述。已有会话可能保留旧上下文。仅为元数据核验，不调用任何 Bridge 工具、不派发任务、不查询 Job。
+
+通过条件：
+
+- 工具集合恰好为 artifact_put、codex_start、codex_get。
+- 没有 wake_probe、旧 continue/approval 工具或 since_revision 参数。
+- codex_get 的描述明确只供用户要求的查询/诊断，禁止自动 start/get 轮询。
+
+可在已选择 Codex Bridge 的新聊天中发送：
+
+> 仅依据本轮已提供的 Codex Bridge 工具定义，列出工具名称，并说明 codex_get 是否含 since_revision、描述是否禁止自动轮询。不要调用任何工具，不要派发任务或查询 Job，不要执行命令。如果看不到工具定义，请如实说明，不要猜测。
+
+未能核验时把此步骤报告为 pending；不要宣称安装已全部完成。刷新后仍看到旧定义，继续定位连接元数据，不通过增加 Skill 重复禁令掩盖冲突，也不查询运行中的任务来测试。
+
+官方参考：[开发连接元数据刷新](https://developers.openai.com/plugins/deploy/connect-chatgpt)。界面可能随版本或工作区权限变化，以实际可见入口为准。
+
 ## 端到端验证
 
 v0.1.8 将“派发 → 执行 → 自动回传核验后的发起对话”作为默认流程。Skill 不另设授权字段、使用约定确认、逐任务询问或审批步骤，也不等待用户再补一句“你自己发过去”。
