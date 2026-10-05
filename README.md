@@ -12,6 +12,8 @@ codex_start 现在先执行硬 LINT：缺少 Goal 或准确 ChatGPT 来源窗口
 
 详细步骤见 [INSTALL.md](INSTALL.md)。首版安装脚本支持 Windows PowerShell 5.1+；其他平台需按相同条件另行适配，不能直接运行这些脚本。
 
+本机的实际运行目录、账号绑定、修复记录和验证边界见 [DESKTOP-6CNV6UL 安装配置记录](docs/INSTALLATION-DESKTOP-6CNV6UL.md)。其他电脑应按通用流程使用自己的 Tunnel 和本地路径。
+
 ## 文件
 
 | 路径 | 用途 |
@@ -35,7 +37,7 @@ codex_start 现在先执行硬 LINT：缺少 Goal 或准确 ChatGPT 来源窗口
 
 当前原生 Bridge 不能从普通终端或 Explorer 独立冷启动。安装后应由打开的 Codex 桌面会话启动；桌面重启后要从新会话重新启动 Bridge。不保存或重放 pipe、thread ID 或会话令牌，也不安装开机服务或改成旧 app-server 后端。
 
-本仓库不包含任何人的登录信息、Tunnel 密钥、任务历史、账号插件 ID 或工作区配置。插件 ZIP 安装不会自动完成 ChatGPT MCP 连接。
+通用安装文件不包含使用者的账号绑定或工作区配置；本机安装记录仅保存维护所需的非凭据配置。本仓库不保存登录凭据、Tunnel 密钥或桌面会话令牌。插件 ZIP 安装不会自动完成 ChatGPT MCP 连接。
 
 **安装/更新条件：必须核验 ChatGPT 实际加载的工具目录。**本机 Bridge 正常、页面显示 Connected、或 Skill 已更新，都不代表账号中的旧 MCP 工具定义已经刷新。已有连接应重新扫描工具，并在新会话确认只有 artifact_put、codex_start、codex_get，没有 wake_probe 和 since_revision，且 codex_get 明确禁止自动轮询。步骤见 [工具元数据刷新](docs/CONNECT-CHATGPT.md#工具元数据刷新安装及更新条件)。
 
