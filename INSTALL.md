@@ -51,12 +51,12 @@ node .\scripts\Test-Bridge.mjs --url http://127.0.0.1:8787
 
 升级到派发前 LINT 时，必须同时更新 Skill v0.1.9、重新构建并部署实际运行的 Bridge，然后按下节刷新连接元数据。只有文件更新不等于硬校验已生效。codex_start 入参不变，但旧的非结构化 prompt 会被拒绝；采用 Skill 的固定区块和行内字段模板。
 
-DISPATCH_LINT_FAILED 明确表示尚未调用桌面后端且没有创建任务。按 errors 的 rule/field/message 一次修正全部问题。v0.1.12 可将缺失标题写为 unavailable，但新信封必须填写两处相同的 Dispatch token UUID v4 和显式 Origin project（确实未知时 unavailable）；回传项目／范围／证据不足时不得自动发送。修正后的提交允许继续，创建结果不明时仍禁止自动重派。auto 和用户明确选择的 manual 都受同一校验。
+DISPATCH_LINT_FAILED 明确表示尚未调用桌面后端且没有创建任务。按 errors 的 rule/field/message 一次修正全部问题。v0.1.13 可将缺失标题写为 unavailable；新信封两处 Dispatch token UUID v4 必须相同，不要求 Origin project。安全方法无法定位窗口时，接收端主动询问人类并等待；查找仅最近 20 条未置顶记录和置顶顺序前 10 条，不补齐配额或扩范围。修正后的提交允许继续，创建结果不明时仍禁止自动重派。auto 和用户明确选择的 manual 都受同一校验。
 
 | 检查 | 拒绝原因 |
 | --- | --- |
 | DL001 | 缺少 Goal 激活开头、/goal 或具体目标 |
-| DL002 | 缺少 ChatGPT 类型、标题／unavailable、ID 声明或新信封的项目字段；仍有占位符或只有“父窗口” |
+| DL002 | 缺少 ChatGPT 类型、标题／unavailable 或 ID 声明；仍有占位符或只有“父窗口” |
 | DL003 | 把 Bridge 的 CODEX_THREAD_ID 当作 ChatGPT 收件人 |
 | DL004 | 两个区块的任务、仓库/工作区或 BASE_SHA 不一致，SHA 格式错误，或新信封的 UUID 缺失／不一致 |
 | DL005 | 区块缺失/乱序/重复、重复字段冲突，或 Return mode 不是 auto/manual |

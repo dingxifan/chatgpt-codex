@@ -72,20 +72,18 @@ test("quoted template sections cannot supply missing live return metadata", () =
 
 const scopedHandoff = validHandoff
   .replaceAll("Task identity: fixture-001", "Task identity: fixture-001\nDispatch token: b3f29391-ef2c-46ed-912f-1c24d981a4d3")
-  .replace("Conversation title: Fixture origin chat", "Conversation title: unavailable\nOrigin project: g-p-6ac304804d6c8191b7e50f3d11d796f6");
+  .replace("Conversation title: Fixture origin chat", "Conversation title: unavailable");
 
-test("missing title is allowed with an explicit scoped dispatch contract", () => {
+test("missing title and project do not block a valid token dispatch", () => {
   assert.deepEqual(lintDispatchPrompt(scopedHandoff), []);
-  assert.deepEqual(lintDispatchPrompt(scopedHandoff.replace("g-p-6ac304804d6c8191b7e50f3d11d796f6", "Codex Bridge")), []);
-  // Unavailable project does not block engineering; receiver must stop unscoped lookup.
-  assert.deepEqual(lintDispatchPrompt(scopedHandoff.replace("g-p-6ac304804d6c8191b7e50f3d11d796f6", "unavailable")), []);
+  // Previously emitted project hints remain compatible but are no longer required.
+  assert.deepEqual(lintDispatchPrompt(scopedHandoff.replace("Conversation title: unavailable", "Conversation title: unavailable\nOrigin project: Codex Bridge")), []);
   assert.deepEqual(lintDispatchPrompt(scopedHandoff.replace("Return mode: auto", "Return mode: manual")), []);
 });
 
 test("missing title alone cannot bypass the dispatch contract", () => {
   assert(lintDispatchPrompt(validHandoff.replace("Fixture origin chat", "unavailable")).some(issue => issue.field === "Dispatch token"));
-  assert(lintDispatchPrompt(scopedHandoff.replace(/Origin project:[^\n]+\n/, "")).some(issue => issue.field === "FINAL RETURN TARGET.Origin project"));
-  assert(lintDispatchPrompt(scopedHandoff.replace("Origin project: g-p-6ac304804d6c8191b7e50f3d11d796f6", "Origin project: [source project]")).some(issue => issue.rule === "DL002"));
+  assert(lintDispatchPrompt(scopedHandoff.replaceAll(/Dispatch token:[^\n]+\n/g, "")).some(issue => issue.field === "Dispatch token"));
 });
 
 test("tokens must be UUID v4 and exactly repeated rather than semantic task names", () => {

@@ -92,7 +92,7 @@ for (const mode of ["auto", "manual"] as const) for (const shape of ["legacy", "
   const root = mkdtempSync(path.join(tmpdir(), "codex-mcp-dispatch-"));
   const handoff = shape === "legacy" ? validHandoff : validHandoff
     .replaceAll("Task identity: fixture-001", "Task identity: fixture-001\nDispatch token: b3f29391-ef2c-46ed-912f-1c24d981a4d3")
-    .replace("Conversation title: Fixture origin chat", "Conversation title: unavailable\nOrigin project: Codex Bridge");
+    .replace("Conversation title: Fixture origin chat", "Conversation title: unavailable");
   const prompt = handoff.replace("Return mode: auto", `Return mode: ${mode}`).replaceAll("\n", "\r\n") + "补充说明：保留原始文本。\r\n";
   const calls: string[] = [];
   const manager = {
@@ -134,7 +134,7 @@ test("LINT rejection creates no task, returns all findings and no job ID", async
       validHandoff.replace("Bound conversation ID: unavailable", "Bound conversation ID: caller-codex-id"),
       validHandoff.replace("Fixture origin chat", "unavailable"),
       validHandoff.replaceAll("Task identity: fixture-001", "Task identity: fixture-001\nDispatch token: b3f29391-ef2c-46ed-912f-1c24d981a4d3")
-        .replace("Conversation title: Fixture origin chat", "Conversation title: unavailable\nOrigin project: Codex Bridge")
+        .replace("Conversation title: Fixture origin chat", "Conversation title: unavailable")
         .replace("b3f29391-ef2c-46ed-912f-1c24d981a4d3", "b3f29391-ef2c-46ed-912f-1c24d981a4d4"),
     ]) {
       const result = await client.callTool({ name: "codex_start", arguments: { workspace: "/allowed/project", prompt } });

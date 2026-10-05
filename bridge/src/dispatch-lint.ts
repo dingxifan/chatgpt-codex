@@ -63,14 +63,10 @@ export function lintDispatchPrompt(prompt: string, callerThreadId?: string): Dis
   const title = target.get("Conversation title") ?? "";
   const token = brief.get("Dispatch token") ?? "";
   const targetToken = target.get("Dispatch token") ?? "";
-  const project = target.get("Origin project") ?? "";
-  const scopedEnvelope = brief.has("Dispatch token") || target.has("Dispatch token") || target.has("Origin project") || title === "unavailable";
-  if (scopedEnvelope) {
+  const tokenEnvelope = brief.has("Dispatch token") || target.has("Dispatch token") || title === "unavailable";
+  if (tokenEnvelope) {
     if (!DISPATCH_TOKEN.test(token) || !DISPATCH_TOKEN.test(targetToken) || token !== targetToken) {
       add("DL004", "Dispatch token", "两处 Dispatch token 必须是完全一致的本次 UUID v4。");
-    }
-    if (!project || PLACEHOLDER.test(project) || VAGUE_TITLE.test(project)) {
-      add("DL002", "FINAL RETURN TARGET.Origin project", "填写已核验来源 GPT 项目或明确 unavailable；不能猜测项目。");
     }
   }
   if (!title || PLACEHOLDER.test(title) || VAGUE_TITLE.test(title) || (title.toLowerCase() === "unavailable" && title !== "unavailable")) {
