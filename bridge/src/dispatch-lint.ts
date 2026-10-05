@@ -7,6 +7,7 @@ export type DispatchLintIssue = {
 const HEADINGS = ["MANDATORY GOAL ACTIVATION", "EXECUTION BRIEF", "FINAL RETURN TARGET", "RETURN ROUTING"] as const;
 const PLACEHOLDER = /<[^<>]+>|\{\{[^{}]+\}\}|^\[[^\]]+\]$|^(?:TODO|TBD|unknown|待填)$/i;
 const VAGUE_TITLE = /^(?:父窗口|原窗口|发起窗口|本父窗口|(?:the |this |same )?parent(?: window| conversation)?|original window|(?:the )?originating(?: ChatGPT)? conversation(?: that dispatched this task)?)$/i;
+const DISPATCH_TOKEN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /** Structural checks only. No I/O, permission changes, target lookup or prompt rewrite. */
 export function lintDispatchPrompt(prompt: string, callerThreadId?: string): DispatchLintIssue[] {
@@ -60,8 +61,20 @@ export function lintDispatchPrompt(prompt: string, callerThreadId?: string): Dis
   const routing = fields("RETURN ROUTING");
   if (target.get("Conversation kind") !== "ChatGPT") add("DL002", "FINAL RETURN TARGET.Conversation kind", "必须明确最终目标类型为 ChatGPT。");
   const title = target.get("Conversation title") ?? "";
-  if (!title || PLACEHOLDER.test(title) || VAGUE_TITLE.test(title) || /^unavailable$/i.test(title)) {
-    add("DL002", "FINAL RETURN TARGET.Conversation title", "缺少准确的 ChatGPT 发起对话标题；不能仅写父窗口或占位符。");
+  const token = brief.get("Dispatch token") ?? "";
+  const targetToken = target.get("Dispatch token") ?? "";
+  const project = target.get("Origin project") ?? "";
+  const scopedEnvelope = brief.has("Dispatch token") || target.has("Dispatch token") || target.has("Origin project") || title === "unavailable";
+  if (scopedEnvelope) {
+    if (!DISPATCH_TOKEN.test(token) || !DISPATCH_TOKEN.test(targetToken) || token !== targetToken) {
+      add("DL004", "Dispatch token", "两处 Dispatch token 必须是完全一致的本次 UUID v4。");
+    }
+    if (!project || PLACEHOLDER.test(project) || VAGUE_TITLE.test(project)) {
+      add("DL002", "FINAL RETURN TARGET.Origin project", "填写已核验来源 GPT 项目或明确 unavailable；不能猜测项目。");
+    }
+  }
+  if (!title || PLACEHOLDER.test(title) || VAGUE_TITLE.test(title) || (title.toLowerCase() === "unavailable" && title !== "unavailable")) {
+    add("DL002", "FINAL RETURN TARGET.Conversation title", "填写真实标题或明确 unavailable；不能仅写父窗口或占位符。");
   }
   const id = target.get("Bound conversation ID");
   if (!id || PLACEHOLDER.test(id)) add("DL002", "FINAL RETURN TARGET.Bound conversation ID", "填写已核验 ID；没有 ID 时明确填写 unavailable。");

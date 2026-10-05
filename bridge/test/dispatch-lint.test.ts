@@ -69,3 +69,29 @@ test("quoted template sections cannot supply missing live return metadata", () =
   assert(lintDispatchPrompt(quoted).some(issue => issue.rule === "DL002"));
   assert.deepEqual(lintDispatchPrompt(validHandoff.replaceAll("\n", "\r\n")), []);
 });
+
+const scopedHandoff = validHandoff
+  .replaceAll("Task identity: fixture-001", "Task identity: fixture-001\nDispatch token: b3f29391-ef2c-46ed-912f-1c24d981a4d3")
+  .replace("Conversation title: Fixture origin chat", "Conversation title: unavailable\nOrigin project: g-p-6ac304804d6c8191b7e50f3d11d796f6");
+
+test("missing title is allowed with an explicit scoped dispatch contract", () => {
+  assert.deepEqual(lintDispatchPrompt(scopedHandoff), []);
+  assert.deepEqual(lintDispatchPrompt(scopedHandoff.replace("g-p-6ac304804d6c8191b7e50f3d11d796f6", "Codex Bridge")), []);
+  // Unavailable project does not block engineering; receiver must stop unscoped lookup.
+  assert.deepEqual(lintDispatchPrompt(scopedHandoff.replace("g-p-6ac304804d6c8191b7e50f3d11d796f6", "unavailable")), []);
+  assert.deepEqual(lintDispatchPrompt(scopedHandoff.replace("Return mode: auto", "Return mode: manual")), []);
+});
+
+test("missing title alone cannot bypass the dispatch contract", () => {
+  assert(lintDispatchPrompt(validHandoff.replace("Fixture origin chat", "unavailable")).some(issue => issue.field === "Dispatch token"));
+  assert(lintDispatchPrompt(scopedHandoff.replace(/Origin project:[^\n]+\n/, "")).some(issue => issue.field === "FINAL RETURN TARGET.Origin project"));
+  assert(lintDispatchPrompt(scopedHandoff.replace("Origin project: g-p-6ac304804d6c8191b7e50f3d11d796f6", "Origin project: [source project]")).some(issue => issue.rule === "DL002"));
+});
+
+test("tokens must be UUID v4 and exactly repeated rather than semantic task names", () => {
+  for (const token of ["fixture-001", "unavailable", "<UUID>", "b3f29391-ef2c-16ed-912f-1c24d981a4d3"]) {
+    assert(lintDispatchPrompt(scopedHandoff.replaceAll("b3f29391-ef2c-46ed-912f-1c24d981a4d3", token)).some(issue => issue.field === "Dispatch token"));
+  }
+  assert(lintDispatchPrompt(scopedHandoff.replace("b3f29391-ef2c-46ed-912f-1c24d981a4d3", "b3f29391-ef2c-46ed-912f-1c24d981a4d4")).some(issue => issue.field === "Dispatch token"));
+  assert(lintDispatchPrompt(scopedHandoff.replaceAll("Conversation title: unavailable", "Conversation title: parent window")).some(issue => issue.field === "FINAL RETURN TARGET.Conversation title"));
+});

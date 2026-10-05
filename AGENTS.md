@@ -10,7 +10,7 @@
 6. 从当前桌面上下文启动 Start-Bridge.ps1。没有上下文时仍完成准备和构建，明确报告 DESKTOP_CONTEXT_REQUIRED；不要复制另一台机器的 pipe/thread ID、调用私有协议、启用旧执行服务器或伪造 ready。
 7. 运行 Test-Bridge.mjs 验证真实 MCP 工具集合和文本落盘。此脚本不派发工程任务，也不调用 codex_get。
 8. 按 CONNECT-CHATGPT.md 检查或配置用户自己的 Tunnel。优先复用已知且属于用户的配置；凭据通过用户自己的安全入口提供，不要求把密钥贴入聊天。不生成密钥或把凭据写进 Git。
-9. 在受支持的 ChatGPT 安装入口导入 out/codex-dispatch-v0.1.10.zip，并为该账号连接自己的 Bridge。有可用且获准的界面工具时可协助；登录或账号授权界面需要用户完成时，保留已完成工作并列出具体下一步。不宣称 Codex 文件系统安装已完成账号安装。
+9. 在受支持的 ChatGPT 安装入口导入 out/codex-dispatch-v0.1.12.zip，并为该账号连接自己的 Bridge。有可用且获准的界面工具时可协助；登录或账号授权界面需要用户完成时，保留已完成工作并列出具体下一步。不宣称 Codex 文件系统安装已完成账号安装。
    已有连接按 CONNECT-CHATGPT.md 刷新工具元数据并在新会话核验实际定义。不得以本机 tools/list、Connected、Skill 更新或没有报错代替此核验；不能完成时将元数据步骤标为 pending。核验只读取工具定义，不调用 codex_start/codex_get；不要为确认刷新而查询现有 Job。
 10. 让用户从已连接的 ChatGPT 明确发起一次只读测试任务，完整遵循 Skill 的 Goal、来源绑定和回传规则。必须观察任务进入正确桌面项目及实际结果；仅 start acknowledgement 不等于成功。先按 Skill 检查接收端实际回传能力并完成适用的安全路由核验；只有无法安全自动发送时才输出人工搬运结果和具体阻碍，不增加轮询。
 

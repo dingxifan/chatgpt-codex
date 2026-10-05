@@ -4,7 +4,7 @@
 
 ## 安装 Skill 插件
 
-运行 scripts/Pack-Plugin.ps1 得到 out/codex-dispatch-v0.1.10.zip。在账号当前支持的插件/Skill 导入入口安装该插件，并开始新会话，确认可以选择 codex-dispatch。若账号没有导入入口，按官方插件/Skills 文档检查可用性，不能用聊天附件代替账号安装。
+运行 scripts/Pack-Plugin.ps1 得到 out/codex-dispatch-v0.1.12.zip。在账号当前支持的插件/Skill 导入入口安装该插件，并开始新会话，确认可以选择 codex-dispatch。若账号没有导入入口，按官方插件/Skills 文档检查可用性，不能用聊天附件代替账号安装。
 
 ## 安装 Tunnel 客户端
 
