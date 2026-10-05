@@ -12,7 +12,7 @@ codex_start 现在先执行硬 LINT：缺少 Goal 或准确 ChatGPT 来源窗口
 
 详细步骤见 [INSTALL.md](INSTALL.md)。首版安装脚本支持 Windows PowerShell 5.1+；其他平台需按相同条件另行适配，不能直接运行这些脚本。
 
-本机的实际运行目录、账号绑定、修复记录和验证边界见 [DESKTOP-6CNV6UL 安装配置记录](docs/INSTALLATION-DESKTOP-6CNV6UL.md)。其他电脑应按通用流程使用自己的 Tunnel 和本地路径。
+两台电脑的实际运行目录、账号绑定、启动方法和验证边界分别见 [DESKTOP-6CNV6UL 安装配置记录](docs/INSTALLATION-DESKTOP-6CNV6UL.md) 和 [LAPTOP-H80BPPA5 安装配置记录](docs/INSTALLATION-LAPTOP-H80BPPA5.md)。其他电脑应按通用流程使用自己的 Tunnel 和本地路径。
 
 ## 文件
 
