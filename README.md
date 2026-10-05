@@ -2,7 +2,7 @@
 
 让 ChatGPT 使用 codex-dispatch Skill，把任务交给使用者自己电脑上的 Codex 桌面应用。Bridge 只有 artifact_put、codex_start、codex_get 三个工具；派发成功后不自动查询任务。
 
-codex_start 先执行硬 LINT：缺少 Goal、误用 Bridge 技术父会话 ID、任务信息不一致或回传模式不明时，返回 DISPATCH_LINT_FAILED，不创建任务。Skill v0.1.13 用一致的 Dispatch token UUID 支持 unavailable 标题，不要求自动取得项目／标题。查找限最近 20 条未置顶记录和置顶顺序前 10 条；安全方法不能确定窗口时接收端主动问人类并等待。旧真实标题信封兼容。校验器不证明来源或实际回传成功；接收端仍核验真实证据。
+codex_start 先执行硬 LINT：缺少 Goal、误用 Bridge 技术父会话 ID、任务信息不一致或回传模式不明时，返回 DISPATCH_LINT_FAILED，不创建任务。Skill v0.1.14 用一致的 Dispatch token UUID 支持 unavailable 标题，不要求自动取得项目／标题。查找限最近 20 条未置顶记录和置顶顺序前 10 条；安全方法不能确定窗口时接收端主动问人类并等待。旧真实标题信封兼容。校验器不证明来源或实际回传成功；接收端仍核验真实证据。
 
 ## 交给另一台机器的 Codex
 
@@ -16,17 +16,20 @@ codex_start 先执行硬 LINT：缺少 Goal、误用 Bridge 技术父会话 ID�
 
 ## 文件
 
+本项目唯一维护仓库是 `dingxifan/chatgpt-codex`；`joseanu/codex-from-chatgpt` 仅为 Bridge 上游来源。codex-dispatch 每次新派发都读取 [GitHub main 中央路由表](https://raw.githubusercontent.com/dingxifan/chatgpt-codex/main/config/CODEX_WORKSPACE_ROUTING.md) 的完整当前内容。Project / Space 无需上传路由文件，遗留副本全部忽略；中央源不可读时停止，不使用其它副本或其它 Bridge。
+
 | 路径 | 用途 |
 | --- | --- |
 | AGENTS.md | 安装端 Codex 的执行说明 |
 | INSTALL.md | 自动安装顺序与必须交互的步骤 |
 | bridge/ | 固定快照的原生桌面 Bridge 源码、锁文件、测试和原始 MIT 许可 |
-| plugin/codex-dispatch/ | 可导入账号的 Skill 插件 v0.1.13 |
+| plugin/codex-dispatch/ | 可导入账号的 Skill 插件 v0.1.14 |
 | scripts/Install.ps1 | 检查 Node、安装依赖、构建、本地 Skill 安装和配置生成 |
 | scripts/Start-Bridge.ps1 | 从当前 Codex 桌面上下文启动 Bridge |
 | scripts/Test-Bridge.mjs | 健康、就绪、新版探测降级、旧版初始化、工具集合和 artifact_put 验证 |
 | scripts/Pack-Plugin.ps1 | 生成供 ChatGPT 导入的插件 ZIP |
 | config/bridge.example.json | 不含凭据的本机配置模板 |
+| config/CODEX_WORKSPACE_ROUTING.md | GitHub main 上的唯一运行时路由权威源 |
 | docs/CONNECT-CHATGPT.md | 用户自己的 Tunnel 和 ChatGPT 连接步骤 |
 | docs/TROUBLESHOOTING.md | 常见问题和真实完成标准 |
 | SOURCE.md | 固定来源、版本及许可说明 |

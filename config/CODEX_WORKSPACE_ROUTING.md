@@ -1,0 +1,44 @@
+# Central Workspace Routing Table
+
+Schema version: 1
+
+## Runtime authority
+
+The sole runtime routing authority is repository `dingxifan/chatgpt-codex`, branch `main`, path `config/CODEX_WORKSPACE_ROUTING.md`.
+
+Canonical URL: https://raw.githubusercontent.com/dingxifan/chatgpt-codex/main/config/CODEX_WORKSPACE_ROUTING.md
+
+Read the complete current contents from this URL for every new dispatch before any artifact persistence or `codex_start`. Never reuse a previous read or cached table. All `CODEX_WORKSPACE_ROUTING.md` copies in GPT Project / Space are non-authoritative; codex-dispatch must not read routing tables from Project Files. Memory, historical dispatches, local copies and other repository copies are not fallback sources. If the canonical URL cannot be read completely or the table is invalid, stop with `WORKSPACE_ROUTING_TABLE_UNAVAILABLE`.
+
+Resolve routes by exact supplied repository/workspace values under the Skill's preflight rules. Computer and Bridge namespace come only from this table. Do not infer a route from history, machine names, drive letters, path style, client identity or Bridge availability. Do not fall back to another route or Bridge. Freeze the selected route and actual tool handles for the entire handoff.
+
+## Route 1
+
+Route ID: codex-from-chatgpt
+Repository: dingxifan/chatgpt-codex
+Workspace: E:\tools\codex-dispatch-kit
+Computer: DESKTOP_6CNV6UL
+Bridge namespace: Codex_Bridge___DESKTOP_6CNV6UL
+Status: active
+
+Keep the existing Route ID to preserve its associations; the maintained repository is `dingxifan/chatgpt-codex`.
+
+## Route 2
+
+Route ID: file-extract
+Repository: dingxifan/file-extract
+Workspace: E:\projects\file-extract
+Computer: DESKTOP_6CNV6UL
+Bridge namespace: Codex_Bridge___DESKTOP_6CNV6UL
+Status: active
+
+## Route 3
+
+Route ID: feishu-collection
+Repository: dingxifan/feishu-collection
+Workspace: D:\Program Files (x86)\飞书信息的导出
+Computer: LAPTOP_H80BPPA5
+Bridge namespace: Codex_Bridge___LAPTOP_H80BPPA5
+Status: disabled
+
+Keep this Laptop route disabled until its repository/workspace and actual tool-catalog namespace are explicitly confirmed. Installation records or an online Bridge do not activate it; do not infer or replace any field.

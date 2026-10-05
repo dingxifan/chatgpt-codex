@@ -4,7 +4,15 @@
 
 ## 安装 Skill 插件
 
-运行 scripts/Pack-Plugin.ps1 得到 out/codex-dispatch-v0.1.13.zip。在账号当前支持的插件/Skill 导入入口安装该插件，并开始新会话，确认可以选择 codex-dispatch。若账号没有导入入口，按官方插件/Skills 文档检查可用性，不能用聊天附件代替账号安装。
+运行 scripts/Pack-Plugin.ps1 得到 out/codex-dispatch-v0.1.14.zip。在账号当前支持的插件/Skill 导入入口安装该插件，并开始新会话，确认可以选择 codex-dispatch。若账号没有导入入口，按官方插件/Skills 文档检查可用性，不能用聊天附件代替账号安装。
+
+## 中央 Workspace Routing
+
+v0.1.14 每次新派发读取 https://raw.githubusercontent.com/dingxifan/chatgpt-codex/main/config/CODEX_WORKSPACE_ROUTING.md 的完整当前内容。唯一权威源为 `dingxifan/chatgpt-codex` / `main` / `config/CODEX_WORKSPACE_ROUTING.md`。Project / Space 无需保存 routing table，遗留副本不参与路由。中央源读取或验证失败返回 `WORKSPACE_ROUTING_TABLE_UNAVAILABLE`，在任何 artifact 写入和 codex_start 前停止；没有 Project Files、Memory、历史、本地副本或其它仓库 fallback。
+
+按中央表精确匹配 repository/workspace，冻结 computer、namespace 和实际工具句柄；所有 artifact_put 与 codex_start 使用同一 namespace。目标工具不在当前目录中时返回 `WORKSPACE_BRIDGE_UNAVAILABLE`，不尝试另一台机器。Laptop 的 feishu-collection route 当前 disabled，确认后需明确修改中央表才能启用。
+
+从旧版升级应重新导入 v0.1.14 ZIP 并使用新会话，核对 Skill 已读取中央 URL。导入 ZIP 不代表账号更新成功；本次没有改变 Bridge 工具接口，Refresh tools 也不能替代 Skill 升级。连接工具元数据仍按下文核验，实际看见旧定义时由账号管理入口刷新。
 
 ## 安装 Tunnel 客户端
 

@@ -1,8 +1,12 @@
 # 固定来源与许可
 
+唯一维护和发布仓库：`dingxifan/chatgpt-codex`（https://github.com/dingxifan/chatgpt-codex.git）。`joseanu/codex-from-chatgpt` 仅为下述 Bridge 上游源码来源，不是本项目部署仓库。
+
+v0.1.14 的运行时路由唯一权威源为本仓库 `main/config/CODEX_WORKSPACE_ROUTING.md`，固定 URL 为 https://raw.githubusercontent.com/dingxifan/chatgpt-codex/main/config/CODEX_WORKSPACE_ROUTING.md 。每次新派发重新读取；忽略 Project / Space 副本，失败即停止，不新增 parser、服务、缓存或 Bridge API。
+
 - Bridge：来源项目 https://github.com/joseanu/codex-from-chatgpt ，本包采用本地 native desktop dispatch 分支快照 9545008a68a021791df1b722b4269e59424fd0e3。该快照没有推送到第三方仓库，因此用户不能靠克隆上游得到同样的原生实现。本仓库直接包含所需 src、test、package-lock、package.json 与 tsconfig，保留 bridge/LICENSE 中的原始 MIT 版权声明。
 - 原生 Bridge 源码未在打包时重新设计；安装包装脚本和文档与其分离。不包含旧 app-server、protocol 生成物、任务状态或运行时数据。
-- Skill：codex-dispatch v0.1.13，包含在 plugin/codex-dispatch/。保留本次派发 UUID 和 workspace 路由；取消 Origin project 必填，不依赖自动标题／项目读取。查找限于最近 20 条未置顶记录及置顶顺序前 10 条；不能确认回传窗口时主动问人类并等待。已核验标题／链接／句柄可作下次辅助提示，不能成为永久绑定。保留 unavailable ID 兼容字段、插件级默认提示、能力声明和兼容 manifest。没有绑定维护者的 ChatGPT 插件 ID 或 MCP 账号连接。
+- Skill：codex-dispatch v0.1.14，包含在 plugin/codex-dispatch/。保留本次派发 UUID 和 workspace 路由；取消 Origin project 必填，不依赖自动标题／项目读取。查找限于最近 20 条未置顶记录及置顶顺序前 10 条；不能确认回传窗口时主动问人类并等待。已核验标题／链接／句柄可作下次辅助提示，不能成为永久绑定。保留 unavailable ID 兼容字段、插件级默认提示、能力声明和兼容 manifest。没有绑定维护者的 ChatGPT 插件 ID 或 MCP 账号连接。
 - 本次 Bridge 改动仅为 dispatch-lint.ts 的新信封兼容及 codex_start 工具描述；不改变原生后端、公开工具参数、Tunnel 或任务生命周期。
 - 安装包装脚本和文档：本仓库新编写。Bridge 的上游许可证不改变；如维护者准备对新文件采用额外许可证，应在发布前明确选择，不能假称第三方版权归本仓库所有。
 - 对上述 Bridge 快照的兼容性修订：无会话的新版 server/discover 探测返回 HTTP 200、JSON-RPC -32601 Method not found，允许客户端继续旧版 initialize 会话流程；不宣称实现新版 stateless 协议。此修订来自另一台安装机器实际验证后提供的差异，源码和回归验证现随本仓库分发。Bridge 不再与上游快照逐字节相同；其余原生派发逻辑保留。

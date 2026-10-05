@@ -51,7 +51,7 @@ node .\scripts\Test-Bridge.mjs --url http://127.0.0.1:8787
 
 升级到派发前 LINT 时，必须同时更新 Skill v0.1.9、重新构建并部署实际运行的 Bridge，然后按下节刷新连接元数据。只有文件更新不等于硬校验已生效。codex_start 入参不变，但旧的非结构化 prompt 会被拒绝；采用 Skill 的固定区块和行内字段模板。
 
-DISPATCH_LINT_FAILED 明确表示尚未调用桌面后端且没有创建任务。按 errors 的 rule/field/message 一次修正全部问题。v0.1.13 可将缺失标题写为 unavailable；新信封两处 Dispatch token UUID v4 必须相同，不要求 Origin project。安全方法无法定位窗口时，接收端主动询问人类并等待；查找仅最近 20 条未置顶记录和置顶顺序前 10 条，不补齐配额或扩范围。修正后的提交允许继续，创建结果不明时仍禁止自动重派。auto 和用户明确选择的 manual 都受同一校验。
+DISPATCH_LINT_FAILED 明确表示尚未调用桌面后端且没有创建任务。按 errors 的 rule/field/message 一次修正全部问题。v0.1.14 可将缺失标题写为 unavailable；新信封两处 Dispatch token UUID v4 必须相同，不要求 Origin project。安全方法无法定位窗口时，接收端主动询问人类并等待；查找仅最近 20 条未置顶记录和置顶顺序前 10 条，不补齐配额或扩范围。修正后的提交允许继续，创建结果不明时仍禁止自动重派。auto 和用户明确选择的 manual 都受同一校验。
 
 | 检查 | 拒绝原因 |
 | --- | --- |
@@ -66,6 +66,10 @@ DISPATCH_LINT_FAILED 明确表示尚未调用桌面后端且没有创建任务�
 脚本启动隐藏进程，输出新进程 PID 和日志位置。维护者只管理本次创建的进程，不关闭其他 Bridge/Tunnel。它不是服务、监督程序或自动重启机制。
 
 ## 5. 连接 ChatGPT
+
+v0.1.14 的路由唯一权威源是 `dingxifan/chatgpt-codex` 的 `main/config/CODEX_WORKSPACE_ROUTING.md`，固定读取地址为 https://raw.githubusercontent.com/dingxifan/chatgpt-codex/main/config/CODEX_WORKSPACE_ROUTING.md 。无需在任何 GPT Project / Space 上传 routing table；旧副本被忽略。每次新派发重新读取完整中央表，读取失败即在 artifact 写入和派发前停止，不使用缓存、本地副本或其它 Bridge。新机器的实际 repository/workspace、computer 和工具 namespace 必须明确配置到中央表并确认后启用；本地 allowlist 不能代替中央路由。
+
+本次路由改造不改变三个 Bridge 工具接口，无需为此重启 Bridge。账号中的 Skill 仍需导入新版 ZIP 并在新会话核验；已有连接的工具元数据刷新要求继续按下面的流程处理。
 
 继续 [CONNECT-CHATGPT.md](docs/CONNECT-CHATGPT.md)。安装插件包与连接 MCP 是两个步骤；每位使用者有自己的账号连接和本地执行目标。
 
