@@ -15,7 +15,7 @@
     ]
   },
   "name": "codex-dispatch",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Standardize ChatGPT-to-Codex handoffs with mandatory Goal activation, dispatch-time origin binding, safe return routing and human relay, exact artifact locators, and no proactive polling.",
   "author": {
     "name": "Plugin owner"
