@@ -48,7 +48,7 @@ Enabled on 2026-10-06 at the user's request to configure known local project rou
 Route ID: auchi-laptop
 Repository: dingxifan/Auchi
 Workspace: D:\development\auchi-shadow
-Computer: LAPTOP_H80BPPA5
+Computer: LAPTOP-H80BPPA5
 Bridge namespace: Codex_Bridge___LAPTOP_H80BPPA5
 Status: active
 
