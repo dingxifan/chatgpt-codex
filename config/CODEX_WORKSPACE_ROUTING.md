@@ -37,7 +37,7 @@ Status: active
 Route ID: feishu-collection
 Repository: dingxifan/feishu-collection
 Workspace: D:\Program Files (x86)\飞书信息的导出
-Computer: LAPTOP_H80BPPA5
+Computer: LAPTOP-H80BPPA5
 Bridge namespace: Codex_Bridge___LAPTOP_H80BPPA5
 Status: active
 
