@@ -16,7 +16,7 @@ Resolve routes by exact supplied repository/workspace values under the Skill's p
 
 Route ID: codex-from-chatgpt
 Repository: dingxifan/chatgpt-codex
-Workspace: E:\tools\codex-dispatch-kit
+Workspace: E:\tools\codex-from-chatgpt
 Computer: DESKTOP_6CNV6UL
 Bridge namespace: Codex_Bridge___DESKTOP_6CNV6UL
 Status: active
