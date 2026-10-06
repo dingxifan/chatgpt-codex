@@ -161,3 +161,7 @@ SHA-256：b304ff9319cf4260a0587fe69eeafba8fd76f6dc60af596d565327b16ce0f180
 研发项目价值评估、亚东朗升经营会议没有 Git remote，基层管理者培训不是 Git 仓库；无法确定中央表要求的 owner/repository，因此本轮暂不加入。这三个项目仍保留在原本地允许列表，不由未知仓库名创建路由。
 
 本次不创建或查询工程任务；新版本的工程执行与自动回传仍为 NOT_RUN。历史 job_id 不作为新路由验收依据。
+
+发布后的 canonical raw URL 实际 GET 返回 HTTP 200，内容与本地中央表一致。本机 Bridge readyz 返回 ready=true、desktop_connected=true，Tunnel readyz 返回 ready。远端 artifact_put 写入 `.local/handoff/v014-install-route-check-20261006.txt`，139 bytes，SHA-256 为 `d5cfb192a773c53680f0ff514a5628cd379e7eda23ef37c03744b5fbc5574dd8`，本机读回一致。
+
+实际服务 tools/list 包含新的 Dispatch token UUIDs 描述；无效格式测试返回 DISPATCH_LINT_FAILED、无 job_id，未创建任务。Chrome 已对既有 Laptop 连接执行 Refresh tools；新会话依据本轮实际定义核验三个工具、title unavailable 时匹配 token 的规则、无法核验回传窗口时询问并等待，以及 codex_get 无 since_revision 且禁止自动轮询。元数据核验没有调用 Bridge 工具。

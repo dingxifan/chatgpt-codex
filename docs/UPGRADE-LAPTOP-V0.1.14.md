@@ -89,4 +89,4 @@ Tunnel 仍正常时复用；未运行时检查既有 profile 与 doctor，再按
 
 ## 本次准备验证
 
-Desktop 上 PowerShell 7 的 Test-Install.ps1 已通过：首次安装缺少工作区拒绝、非法既有配置在写入前拒绝、升级省略工作区复用配置、配置字节保持、Skill 精确安装、冲突保留、更新备份和缺少桌面上下文拒绝。Windows PowerShell 5 的实际脚本运行被本机执行策略阻止，未修改策略，不能报告该运行通过。Laptop 的安装、服务重启和端到端验证尚未执行。
+Desktop 上 PowerShell 7 的 Test-Install.ps1 已通过：首次安装缺少工作区拒绝、非法既有配置在写入前拒绝、升级省略工作区复用配置、配置字节保持、Skill 精确安装、冲突保留、更新备份和缺少桌面上下文拒绝。Windows PowerShell 5 的实际脚本运行被本机执行策略阻止，未修改策略，不能报告该运行通过。本段为准备阶段的 Desktop 验证；Laptop 在 2026-10-06 的实际安装、服务和路由验证结果见 INSTALLATION-LAPTOP-H80BPPA5.md，不由本段推定端到端验证通过。
