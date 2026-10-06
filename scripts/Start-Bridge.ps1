@@ -16,7 +16,7 @@ if (-not $AppToolsServer) {
     }
 }
 if (-not $AppToolsServer -or -not [IO.Path]::IsPathRooted($AppToolsServer) -or -not (Test-Path -LiteralPath $AppToolsServer -PathType Leaf)) { throw 'Installed codex-app-tools server.mjs not found. Supply -AppToolsServer using a verified local installation.' }
-$config = Get-Content -Raw -LiteralPath (Join-Path $taskRoot '.local\bridge.json') | ConvertFrom-Json
+$config = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $taskRoot '.local\bridge.json') | ConvertFrom-Json
 if ($config.port -lt 1 -or $config.port -gt 65535 -or @($config.workspaceRoots).Count -eq 0) { throw 'Invalid local configuration.' }
 $entry = Join-Path $taskRoot 'bridge\dist\src\index.js'
 if (-not (Test-Path -LiteralPath $entry)) { throw 'Build missing; run Install.ps1 first.' }

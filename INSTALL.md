@@ -19,6 +19,10 @@
 
 Install.ps1 使用 npm ci 与锁文件构建，不覆盖现有 .local/bridge.json。更新工作区或端口时手动编辑该文件后验证；示例在 config/bridge.example.json。不同内容的同名本地 Skill 默认拒绝覆盖，更新时可指定 -UpdateSkill（先备份）。
 
+已有安装可执行 `.\scripts\Install.ps1 -UpdateSkill`，省略 WorkspaceRoots 时从现有配置读取并验证目录、端口和 artifact 根目录字段。首次安装缺少 WorkspaceRoots 或既有配置无效时，在修改 Skill/构建前停止。已有配置不会被 WorkspaceRoots/Port 参数覆盖；脚本输出实际保留的工作区和端口。仅确认锁文件、依赖声明未变化且依赖完整时使用 `-SkipDependencies`。
+
+LAPTOP-H80BPPA5 已有安装的升级顺序见 [Laptop v0.1.14 升级步骤](docs/UPGRADE-LAPTOP-V0.1.14.md)，不要重复创建 Tunnel、连接或密钥。
+
 脚本不会全局修改 PowerShell 执行策略；若当前策略阻止运行，由安装端依据实际环境处理该具体问题。生成的本地 Skill 默认位于当前 Windows 用户的 .agents/skills/codex-dispatch。
 
 ## 3. 验证源码
@@ -70,6 +74,8 @@ DISPATCH_LINT_FAILED 明确表示尚未调用桌面后端且没有创建任务�
 v0.1.14 的路由唯一权威源是 `dingxifan/chatgpt-codex` 的 `main/config/CODEX_WORKSPACE_ROUTING.md`，固定读取地址为 https://raw.githubusercontent.com/dingxifan/chatgpt-codex/main/config/CODEX_WORKSPACE_ROUTING.md 。无需在任何 GPT Project / Space 上传 routing table；旧副本被忽略。每次新派发重新读取完整中央表，读取失败即在 artifact 写入和派发前停止，不使用缓存、本地副本或其它 Bridge。新机器的实际 repository/workspace、computer 和工具 namespace 必须明确配置到中央表并确认后启用；本地 allowlist 不能代替中央路由。
 
 本次路由改造不改变三个 Bridge 工具接口，无需为此重启 Bridge。账号中的 Skill 仍需导入新版 ZIP 并在新会话核验；已有连接的工具元数据刷新要求继续按下面的流程处理。
+
+该说明仅针对已运行 v0.1.13 Bridge 的升级。从 v0.1.10 或更早版本升级时，中间版本包含 dispatch LINT 和工具描述更新，仍须构建并替换实际 Bridge 进程、刷新该连接工具元数据，再用新会话核验。
 
 继续 [CONNECT-CHATGPT.md](docs/CONNECT-CHATGPT.md)。安装插件包与连接 MCP 是两个步骤；每位使用者有自己的账号连接和本地执行目标。
 

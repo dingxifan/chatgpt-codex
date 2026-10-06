@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$true)][string[]]$WorkspaceRoots,
+    [string[]]$WorkspaceRoots,
     [ValidateRange(1,65535)][int]$Port = 8787,
     [string]$SkillDirectory = (Join-Path $env:USERPROFILE '.agents\skills\codex-dispatch'),
     [switch]$UpdateSkill,
@@ -9,6 +9,26 @@ param(
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path $PSScriptRoot -Parent
 $utf8 = New-Object System.Text.UTF8Encoding($false)
+$local = Join-Path $taskRoot '.local'
+$config = Join-Path $local 'bridge.json'
+$existingConfig = $null
+if (Test-Path -LiteralPath $config) {
+    $existingConfig = Get-Content -Raw -Encoding UTF8 -LiteralPath $config | ConvertFrom-Json
+    if ($existingConfig.port -lt 1 -or $existingConfig.port -gt 65535 -or
+        @($existingConfig.workspaceRoots).Count -eq 0 -or
+        -not ($existingConfig.handoffRoot -is [string]) -or [string]::IsNullOrWhiteSpace($existingConfig.handoffRoot)) {
+        throw 'Invalid existing configuration; inspect .local/bridge.json before updating. No files were changed.'
+    }
+    foreach ($root in $existingConfig.workspaceRoots) {
+        if (-not ($root -is [string]) -or -not [IO.Path]::IsPathRooted($root) -or -not (Test-Path -LiteralPath $root -PathType Container)) {
+            throw 'Existing workspaceRoots must be existing absolute directories. Inspect .local/bridge.json; no files were changed.'
+        }
+    }
+}
+if (-not $WorkspaceRoots -or $WorkspaceRoots.Count -eq 0) {
+    if (-not $existingConfig) { throw 'First install requires explicit -WorkspaceRoots. No files were changed.' }
+    $WorkspaceRoots = @($existingConfig.workspaceRoots)
+}
 $node = (Get-Command node -ErrorAction Stop).Source
 $major = [int]((& $node --version).TrimStart('v').Split('.')[0])
 if ($major -lt 20) { throw 'Node.js 20+ required.' }
@@ -32,12 +52,15 @@ try {
 New-Item -ItemType Directory -Path $SkillDirectory -Force | Out-Null
 if ($different) { Copy-Item -LiteralPath $destination -Destination ($destination + '.backup-' + [guid]::NewGuid().ToString('N')) }
 Copy-Item -LiteralPath $source -Destination $destination -Force
-$local = Join-Path $taskRoot '.local'
 New-Item -ItemType Directory -Path $local -Force | Out-Null
-$config = Join-Path $local 'bridge.json'
 if (-not (Test-Path -LiteralPath $config)) {
     $value = [ordered]@{ workspaceRoots=$roots; port=$Port; handoffRoot='.local/handoff'; allowedHosts=@() }
     [IO.File]::WriteAllText($config, ($value | ConvertTo-Json -Depth 4), $utf8)
-} else { Write-Output 'Existing configuration preserved; inspect its workspaceRoots and port.' }
+} else {
+    Write-Output ('Existing configuration preserved; effective port=' + $existingConfig.port + '; workspaceRoots=' + (ConvertTo-Json -InputObject @($existingConfig.workspaceRoots) -Compress))
+    if ($PSBoundParameters.ContainsKey('WorkspaceRoots') -or $PSBoundParameters.ContainsKey('Port')) {
+        Write-Output 'WorkspaceRoots and Port arguments do not replace existing configuration. Edit .local/bridge.json explicitly for an intended configuration change.'
+    }
+}
 Write-Output ('PREPARED: skill=' + $destination + '; config=' + $config)
 Write-Output 'Desktop, Tunnel and ChatGPT validation are separate steps; installation is not yet end-to-end verified.'
