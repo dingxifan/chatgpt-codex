@@ -1,10 +1,12 @@
 # 中央路由迁移验证
 
+2026-10-06 路径核对：当前唯一维护目录为 `E:\tools\codex-from-chatgpt`，见 [Desktop 环境基线](ENVIRONMENT-BASELINE-DESKTOP-6CNV6UL.md)。中央表 Route 1 已由 [PR #4](https://github.com/dingxifan/chatgpt-codex/pull/4) 更正并合并。下文是 2026-10-05 的迁移证据；旧目录、当时的 route 数量及 disabled 状态仅属历史，不用于当前路由或命令。
+
 日期：2026-10-05，America/New_York。范围：唯一 GitHub 中央路由配置与 codex-dispatch v0.1.14；不修改 Bridge 接口，不新增 parser、服务、缓存或生命周期设施。
 
 ## Git 基线与版本
 
-- 维护目录：`E:\tools\codex-dispatch-kit`；origin fetch/push 均为 `https://github.com/dingxifan/chatgpt-codex.git`。
+- 当时维护目录（已停用）：`E:\tools\codex-dispatch-kit`；当时 origin fetch/push 均为 `https://github.com/dingxifan/chatgpt-codex.git`。
 - 开始时 HEAD：`60da79c19c2131583200fdd3292c130aed2cef94`；`git status --short` 为空。
 - fetch 后 origin/main：`ea2f882a1f4aecddfdc03f0439b3149139d0f57c`。
 - 本地已有两个独有提交（`687e69c`、`60da79c`）；远端独有提交为 Laptop 安装记录。正常 merge，无冲突，保留全部历史；未 reset、clean 或改上游仓库。

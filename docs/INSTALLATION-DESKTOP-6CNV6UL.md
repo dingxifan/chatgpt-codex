@@ -1,6 +1,8 @@
 # DESKTOP-6CNV6UL 安装配置记录
 
-记录日期：2026-10-04，America/New_York。本文记录这台 Windows 电脑的实际 Bridge 安装位置、当前账号连接、启动方法和验证边界，供维护本机及配置第二台电脑时参考。
+当前维护仓库（2026-10-06 核实）：`E:\tools\codex-from-chatgpt`，origin 为 `https://github.com/dingxifan/chatgpt-codex.git`。当前环境与命令见 [Desktop 环境基线](ENVIRONMENT-BASELINE-DESKTOP-6CNV6UL.md)。安装仓库位置和下文检查命令已更正；其它 2026-10-04 的版本、提交和验收结果保留为历史快照，不能当作今天的验证结果。
+
+原记录日期：2026-10-04，America/New_York。本文记录当时这台 Windows 电脑的 Bridge 安装、账号连接、启动方法和验证边界，供维护本机及配置第二台电脑时参考。
 
 本机已恢复 Bridge 和 Tunnel，远端 `artifact_put` 已成功写入本机并通过读回校验。尚未执行 `codex_start`、目标项目任务执行和原 ChatGPT 会话回传测试，因此不能将整个派发流程标为全部完成。
 
@@ -38,7 +40,7 @@ Skill 规定交接格式和执行规则，不选择电脑。MCP 服务提供 `ar
 | 项目 | 本机实际值 |
 | --- | --- |
 | 电脑名 | `DESKTOP-6CNV6UL` |
-| 安装仓库 | `E:\tools\codex-dispatch-kit` |
+| 维护仓库（2026-10-06 核实） | `E:\tools\codex-from-chatgpt` |
 | 仓库远端 | `https://github.com/dingxifan/chatgpt-codex.git` |
 | 本轮记录前仓库 HEAD | `b6e53491aff8b29d5ff1fa0175fbf1f1bec49197` |
 | 实际运行目录 | `C:\Users\Administrator\.codex-agent-mcp\runtime-desktop-dispatch-20261001` |
@@ -93,7 +95,7 @@ Skill 规定交接格式和执行规则，不选择电脑。MCP 服务提供 `ar
 
 ```powershell
 & 'E:\tools\tunnel-client\tunnel-client.exe' runtimes status codex-bridge --json
-& 'C:\Program Files\nodejs\node.exe' 'E:\tools\codex-dispatch-kit\scripts\Test-Bridge.mjs' --url http://127.0.0.1:8787
+& 'C:\Program Files\nodejs\node.exe' 'E:\tools\codex-from-chatgpt\scripts\Test-Bridge.mjs' --url http://127.0.0.1:8787
 ```
 
 第一个命令查询本地运行状态。第二个命令会写入一个验证 artifact 并核对内容和摘要，不调用 `codex_start` 或 `codex_get`，因此不是纯只读检查。不要把它的通过结果当作工程任务执行和回传证明。
