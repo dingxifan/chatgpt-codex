@@ -20,7 +20,7 @@ const discovery = await fetch(new URL('/mcp', base), {
 assert.equal(discovery.status, 200, 'Discovery fallback must be a JSON-RPC response, not an HTTP error');
 assert.equal(discovery.headers.get('mcp-session-id'), null, 'Discovery must not create a legacy session');
 assert.deepEqual(await discovery.json(), { jsonrpc: '2.0', id: 'installation-discovery', error: { code: -32601, message: 'Method not found' } });
-const client = new Client({ name: 'codex-dispatch-kit-verification', version: '0.1.0' });
+const client = new Client({ name: 'codex-from-chatgpt-verification', version: '0.1.0' });
 try {
   await client.connect(new StreamableHTTPClientTransport(new URL('/mcp', base)));
   const listed = await client.listTools();

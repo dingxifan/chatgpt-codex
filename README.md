@@ -14,6 +14,8 @@ codex_start 先执行硬 LINT：缺少 Goal、误用 Bridge 技术父会话 ID�
 
 两台电脑的实际运行目录、账号绑定、启动方法和验证边界分别见 [DESKTOP-6CNV6UL 安装配置记录](docs/INSTALLATION-DESKTOP-6CNV6UL.md) 和 [LAPTOP-H80BPPA5 安装配置记录](docs/INSTALLATION-LAPTOP-H80BPPA5.md)。其他电脑应按通用流程使用自己的 Tunnel 和本地路径。
 
+Desktop 当前唯一维护目录为 `E:\tools\codex-from-chatgpt`，对应 `dingxifan/chatgpt-codex`；最新核对与验证命令见 [2026-10-06 环境基线](docs/ENVIRONMENT-BASELINE-DESKTOP-6CNV6UL.md)。
+
 ## 文件
 
 本项目唯一维护仓库是 `dingxifan/chatgpt-codex`；`joseanu/codex-from-chatgpt` 仅为 Bridge 上游来源。codex-dispatch 每次新派发都读取 [GitHub main 中央路由表](https://raw.githubusercontent.com/dingxifan/chatgpt-codex/main/config/CODEX_WORKSPACE_ROUTING.md) 的完整当前内容。Project / Space 无需上传路由文件，遗留副本全部忽略；中央源不可读时停止，不使用其它副本或其它 Bridge。
