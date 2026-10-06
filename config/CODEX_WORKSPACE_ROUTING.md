@@ -53,3 +53,14 @@ Bridge namespace: Codex_Bridge___LAPTOP_H80BPPA5
 Status: active
 
 The Laptop desktop project list exposes this exact workspace. Its Git remote named github is https://github.com/dingxifan/Auchi.git; the separate Gitee origin does not replace this verified GitHub repository identity. Enabled under the same explicit request to configure known Laptop routes.
+
+## Route 5
+
+Route ID: mail-ai
+Repository: dingxifan/mail-ai
+Workspace: E:\projects\mail-ai
+Computer: DESKTOP_6CNV6UL
+Bridge namespace: Codex_Bridge___DESKTOP_6CNV6UL
+Status: active
+
+Enabled at the user's request for the local mail-ai workspace. The route uses the same verified DESKTOP bridge namespace as the other configured E:\projects workspace on this computer.
