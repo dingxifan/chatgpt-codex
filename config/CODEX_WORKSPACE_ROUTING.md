@@ -64,3 +64,15 @@ Bridge namespace: Codex_Bridge___DESKTOP_6CNV6UL
 Status: active
 
 Enabled at the user's request for the local mail-ai workspace. The route uses the same verified DESKTOP bridge namespace as the other configured E:\projects workspace on this computer.
+
+
+## Route 6
+
+Route ID: hact-method
+Repository: dingxifan/hact-method
+Workspace: E:\projects\hact-method
+Computer: DESKTOP_6CNV6UL
+Bridge namespace: Codex_Bridge___DESKTOP_6CNV6UL
+Status: active
+
+Enabled from direct Codex execution evidence on DESKTOP_6CNV6UL showing the adopted Method repository at this exact workspace; this route supports Method maintenance dispatches without inferring from drive-letter style.
