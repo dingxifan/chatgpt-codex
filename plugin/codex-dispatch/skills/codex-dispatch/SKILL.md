@@ -142,6 +142,16 @@ Every handoff starts with MANDATORY GOAL ACTIVATION and tells the receiver:
 
 Before substantive analysis, file modification, command execution, Git operations, review, or implementation, establish the following /goal in this Codex conversation. Do not begin substantive work until the Goal is active. Use actual Goal activation; repeating the command is not activation. If activation cannot be established, do not begin engineering and report the limitation through the return procedure below.
 
+### Receiver execution-context check and human correction
+
+Every handoff must include this check in the Task Payload, after the six EXECUTION BRIEF fields and before the engineering instructions. Include the same requirement in any persisted execution packet; preserve the canonical envelope fields and order.
+
+- After Goal activation and before repository commands, artifact reads, modifications or other engineering operations, report this receiving task's actual runtime permission context: sandbox mode or permission profile, filesystem restrictions, network access and approval policy, as available from trustworthy current-task context. Do not infer these from a Desktop UI label, global config, another conversation or a successful command; do not probe protected resources to test access.
+- For this user's Desktop dispatch workflow, compare that context with the user-selected Full access setting. If the user explicitly requests a restricted mode for this task, preserve that choice instead; this check does not grant or expand authority.
+- If the expected Full access context is actually workspace-write, sandboxed or otherwise restricted, stop engineering immediately and report locally: “界面设置与本任务实际权限不一致”, together with the actual context and work not yet performed. If the context cannot be established, report that uncertainty and stop rather than assuming a match. Do not blame the user's UI selection or claim to know which Desktop/Bridge/task stage caused the mismatch.
+- Leave correction to the human in Codex Desktop. The user may reselect “完全访问” in the receiving conversation's permission control, then send “你再看下授权” or resume the task. Codex must not modify safety configuration, bypass restrictions or elevate permissions itself. Phrase the handoff as verification of the user's selection and stopping on mismatch, not as an instruction to disable a sandbox or change permissions.
+- On human-triggered continuation, re-read and report the current task context. Only after it matches may the same task continue its already authorized work. A UI click or human statement alone is not proof that the updated context has arrived. Preserve the task identity, baseline and scope; do not redispatch, poll for permission changes or create an automatic retry mechanism. Handle Goal status under the receiving session's existing rules; a permission stop does not complete the engineering objective.
+
 Do not add generic authorization or approval instructions to the generated /goal or execution brief. In particular, do not write “ask for authorization when required”, “request Human Authority”, “follow the receiving window's permissions”, or equivalent boilerplate. Do not manufacture or exhaustively enumerate authorized actions or actions requiring approval. Carry forward the user's concrete task instructions, including explicit permissions, restrictions and reserved decisions, without manufacturing a general approval policy or expanding their scope. Leave the receiving session's existing configuration and instructions to govern execution without restating them in the handoff.
 
 Generate one concrete /goal containing the objective, scope and applicable BASE_SHA, autonomous execution, and the following requirements INSIDE the Goal:
@@ -203,6 +213,7 @@ Protocol checks, scoped to each section (do not accept a field found elsewhere):
 - Dispatch token, Task identity, Repository / workspace and BASE_SHA are byte-for-byte identical between EXECUTION BRIEF and FINAL RETURN TARGET; resolve once and reuse rather than regenerating them.
 - Return mode exists in all three sections, including RETURN ROUTING itself. All three equal auto by default, or all three equal manual for an explicit human manual-result/no-message instruction; the Goal and routing procedure agree with that choice.
 - Required persisted artifacts have exact locators, filenames and digests from successful service results; no stale or guessed identity is used. When no artifacts are required, the payload says Artifacts: none.
+- Task Payload and any persisted execution packet include the receiver execution-context check, local stop on mismatch, human correction and recheck before continuing the same task, as specified in section 4.
 - No unresolved template placeholders or conflicting payload/protocol values remain. Existing Bridge LINT is an additional subset check, not a substitute for this preflight.
 
 Retain the semantic checks:

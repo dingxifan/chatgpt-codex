@@ -4,7 +4,9 @@
 
 ## 安装 Skill 插件
 
-运行 scripts/Pack-Plugin.ps1 得到 out/codex-dispatch-v0.1.14.zip。在账号当前支持的插件/Skill 导入入口安装该插件，并开始新会话，确认可以选择 codex-dispatch。若账号没有导入入口，按官方插件/Skills 文档检查可用性，不能用聊天附件代替账号安装。
+运行 scripts/Pack-Plugin.ps1 得到 out/codex-dispatch-v0.1.15.zip。已有插件使用其更新入口，保留身份与连接；首次安装使用账号当前支持的插件/Skill 导入入口。开始新会话，确认可以选择 codex-dispatch。若账号没有导入入口，按官方插件/Skills 文档检查可用性，不能用聊天附件代替账号安装。
+
+v0.1.15 将接收端权限核对作为常规交接要求：工程操作前报告实际 execution context，与用户选择的完全访问核对；不一致就停止，由用户在 Desktop 手动切换，续行时复核后继续同一任务。Codex 不自行修改权限，不重新派发或轮询。用户明确要求受限模式时保留其选择。此更新只改变 Skill，不要求重启 Bridge。
 
 ## 中央 Workspace Routing
 
