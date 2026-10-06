@@ -79,7 +79,7 @@ Tunnel 仍正常时复用；未运行时检查既有 profile 与 doctor，再按
 
 ## 6. 路由确认与端到端测试
 
-中央表的 `feishu-collection` route 仍为 disabled。先在 Laptop 核对实际仓库完整 owner/repository、准确项目根路径；再从实际 ChatGPT 工具目录确认 namespace 为 `Codex_Bridge___LAPTOP_H80BPPA5`。安装记录或在线状态不能代替这些证据。
+准备该升级指引时，中央表的 `feishu-collection` route 为 disabled。2026-10-06 已在 Laptop 核实并按用户明确要求启用该路由及 auchi-laptop，证据见 INSTALLATION-LAPTOP-H80BPPA5.md 的当日更新记录。其它安装或未来新增路由仍需先核对实际仓库完整 owner/repository、准确项目根路径，再从实际工具目录确认 namespace；安装记录或在线状态不能代替这些证据。
 
 只有用户明确确认该 route 的值及启用后，才在维护仓库修改中央 `config/CODEX_WORKSPACE_ROUTING.md` 并发布。安装脚本不会启用 route，也不会增加其它四个 Laptop 项目路由。未启用时应返回 WORKSPACE_ROUTE_NOT_FOUND，不能为了测试绕过 Skill 或切到 Desktop Bridge。
 

@@ -2,6 +2,8 @@
 
 记录日期：2026-10-05，Asia/Shanghai。本文记录这台 Windows ARM64 电脑的实际安装、独立 Tunnel、启动方法和同步验证结果。路径和账号资源 ID 仅用于维护定位；不包含 API 密钥、桌面 pipe、桌面会话上下文值或登录令牌。
 
+2026-10-06 已升级至 v0.1.14 并配置已核实的本地项目中央路由，见文末更新记录。以下 2026-10-05 的验证事实保留为历史快照。
+
 ## 当前状态与验证边界
 
 | 阶段 | 已确认事实 | 尚未确认的范围 |
@@ -136,3 +138,26 @@ SHA-256：b304ff9319cf4260a0587fe69eeafba8fd76f6dc60af596d565327b16ce0f180
 随后经用户选择“信息采集”项目，派发只读任务返回 `job_id=01a109f2-bbf1-7531-9a22-9f221d816fe5`。Bridge 警告任务已创建但未能自动切到前台，禁止据此重派。本次记录不主动调用 codex_get、不查询任务来验证工具刷新；任务实际执行和返回结果仍保留待确认状态。
 
 后续同步继续使用 [安装流程](../INSTALL.md) 和 [连接说明](CONNECT-CHATGPT.md)：先比较已跟踪修改与依赖差异，快进同步、构建、部署、验证实际服务，再刷新 ChatGPT 工具目录。仅下载源码或替换 Skill 不等于已部署；遇到派发状态不明也不得自动重派。
+
+## 2026-10-06：v0.1.14 升级与中央路由
+
+用户明确要求完成安装，并配置已经知道的本地项目目录路由，未知项目暂不加入。同步前 HEAD 为 ea2f882；快进至 `b2292749262a6c08e0db1a835b5becb7561e656e`，依赖声明和锁文件没有变化。使用 PowerShell 7 执行 `Install.ps1 -UpdateSkill -SkipDependencies`，复用既有配置和依赖。
+
+- 本地 Skill 与仓库源文件摘要一致；当前账号远程插件缓存 v0.1.14 与源文件内容一致（忽略 CRLF/LF），无需重复导入插件。
+- `.local/bridge.json` 升级前后摘要仍为 `7e9ccc8f83060bd50375d762c0f5618beb66ba84b205037b74d21df12149bcac`。沿用既有五个允许根目录、8787 端口、独立 Tunnel、profile 和 v3 DPAPI 文件。
+- 本轮开始时 Bridge/Tunnel 未运行，使用当前桌面上下文启动。第一次本地测试遇到桌面连接尚未就绪；随后 readyz 确认 desktop_connected=true，重新验证通过，没有修改后端或配置。
+- Typecheck、build、Test-Install.ps1 通过。完整源码测试为 44 项，42 通过，2 项因 Windows symlink EPERM 失败，不声称全量通过。
+- 实际 Test-Bridge.mjs 通过：健康、桌面就绪、协议探测降级、三个工具、文本写入读回。验证文件为 `.local/handoff/installation-check-272b7cf3-c58e-4743-ba3b-7cf0493ffcca.txt`。Tunnel doctor 通过，健康与远端复核结果见下文。
+
+中央路由的两个 Laptop active 项目均由本轮 `list_projects` 和本地 Git remotes 实际核实：
+
+| Route ID | Repository | 精确工作区 |
+| --- | --- | --- |
+| feishu-collection | dingxifan/feishu-collection | `D:\Program Files (x86)\飞书信息的导出` |
+| auchi-laptop | dingxifan/Auchi | `D:\development\auchi-shadow` |
+
+两个项目使用 `Codex_Bridge___LAPTOP_H80BPPA5`。当前工具目录以标准化标识 `mcp__codex_apps__codex_bridge___laptop_h80bppa5__...` 提供工具，描述明确归属 `Codex Bridge - LAPTOP-H80BPPA5`，可确认精确连接身份。飞书项目的 origin 为 GitHub；Auchi 的 `github` remote 为上述 GitHub 仓库，Gitee origin 保留。
+
+研发项目价值评估、亚东朗升经营会议没有 Git remote，基层管理者培训不是 Git 仓库；无法确定中央表要求的 owner/repository，因此本轮暂不加入。这三个项目仍保留在原本地允许列表，不由未知仓库名创建路由。
+
+本次不创建或查询工程任务；新版本的工程执行与自动回传仍为 NOT_RUN。历史 job_id 不作为新路由验收依据。

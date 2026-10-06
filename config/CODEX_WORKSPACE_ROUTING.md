@@ -39,6 +39,17 @@ Repository: dingxifan/feishu-collection
 Workspace: D:\Program Files (x86)\飞书信息的导出
 Computer: LAPTOP_H80BPPA5
 Bridge namespace: Codex_Bridge___LAPTOP_H80BPPA5
-Status: disabled
+Status: active
 
-Keep this Laptop route disabled until its repository/workspace and actual tool-catalog namespace are explicitly confirmed. Installation records or an online Bridge do not activate it; do not infer or replace any field.
+Enabled on 2026-10-06 at the user's request to configure known local project routes. The Laptop desktop project list exposes this exact workspace; its Git origin is https://github.com/dingxifan/feishu-collection.git. The current tool catalog identifies the Codex Bridge - LAPTOP-H80BPPA5 connector and its normalized Laptop namespace, including artifact_put and codex_start.
+
+## Route 4
+
+Route ID: auchi-laptop
+Repository: dingxifan/Auchi
+Workspace: D:\development\auchi-shadow
+Computer: LAPTOP_H80BPPA5
+Bridge namespace: Codex_Bridge___LAPTOP_H80BPPA5
+Status: active
+
+The Laptop desktop project list exposes this exact workspace. Its Git remote named github is https://github.com/dingxifan/Auchi.git; the separate Gitee origin does not replace this verified GitHub repository identity. Enabled under the same explicit request to configure known Laptop routes.
