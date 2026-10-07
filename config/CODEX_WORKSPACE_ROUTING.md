@@ -12,6 +12,16 @@ Read the complete current contents from this URL for every new dispatch before a
 
 Resolve routes by exact supplied repository/workspace values under the Skill's preflight rules. Computer and Bridge namespace come only from this table. Do not infer a route from history, machine names, drive letters, path style, client identity or Bridge availability. Do not fall back to another route or Bridge. Freeze the selected route and actual tool handles for the entire handoff.
 
+### Optional publication scope (Schema 1)
+
+Execution routing still uses the six existing required fields. A route may additionally contain two nonempty inline fields: `Publish targets` and `Publish order`. Copy both selected-route values unchanged into Task Payload, not into the canonical envelope fields. They describe publication scope, not execution routing or permission to push, merge or deploy; the current human task determines authorized actions.
+
+`Publish targets` is a list of final-delivery repository-address/branch pairs: `address => refs/heads/branch`, separated by ` | `. Each address is a credential-free HTTPS or SSH Git repository address (including SSH scp-style addresses); each branch is a valid full branch ref. Do not detach a branch from its address. `Publish order` describes the primary platform, PR/merge gates and synchronization sequence for those targets; for a single target it states that target's existing publication flow. When that order calls for a task-branch push/PR, the same listed repository address may receive the task branch as an intermediate step if the human authorizes it; this does not authorize the final merge or add another publication repository. Duplicate/conflicting pairs, empty/missing halves, a present-but-empty field, an unsupported address/ref or an incomplete/contradictory order are configuration errors. Report them; do not silently use fallback. Older Skills may ignore these optional fields without changing Schema 1 route selection.
+
+Only when BOTH optional fields are absent in the successfully read selected route does the workspace-Git fallback apply: if this task requests publication/synchronization, the receiver inspects the one selected Git repository, every configured remote and all effective push addresses, and synchronizes this task's intended delivery branch(es) to every such publication target under the task's authority and existing PR gates. This is the user's full-sync fallback, not a default `origin`-only push. No Git repository, multiple independent repositories, no push addresses, or an unresolved delivery branch/merge sequence needs clarification; do not guess a cross-repository scope. No additional Project Files lookup is introduced. A failed/incomplete central read is NEVER an absent optional field.
+
+For either scope, compare intended targets against actual remotes and all push addresses before writing. A mismatch must not redirect a push or add an unexpected destination. An explicit target set may be a subset of configured push addresses: verify each listed address against the effective configuration, but do not add the other addresses. Fallback covers ALL effective addresses. Unresolvable push-address discovery is a blocker, not an address to silently skip; do not disclose embedded credentials. Push and verify each validated address/ref explicitly; do not push by a remote alias when its multiple push URLs would fan out to unselected addresses. Push/merge authorization remains task-specific. Synchronize only the intended delivery refs, not all local branches/tags; do not use `push --mirror`, automatically force, create remotes/credentials or rewrite remote configuration. For equal commit IDs across platforms, synchronize the explicitly chosen primary platform's verified merge result; do not independently merge each platform. Respect divergence and write restrictions, and report success/failure/pending verification separately for each target. Verify the actual remote refs against the intended final SHA (not local tracking refs). Only all required verified targets justify “fully synchronized”; one target's success is not overall success. Report authorized intermediate branch/PR completion separately from final-branch synchronization awaiting merge authority.
+
 ## Route 1
 
 Route ID: codex-from-chatgpt
@@ -20,6 +30,8 @@ Workspace: E:\tools\codex-from-chatgpt
 Computer: DESKTOP_6CNV6UL
 Bridge namespace: Codex_Bridge___DESKTOP_6CNV6UL
 Status: active
+Publish targets: https://github.com/dingxifan/chatgpt-codex.git => refs/heads/main
+Publish order: GitHub is primary. Push the task branch and open/update a draft PR targeting main; review and merge only when the human authorizes that step. Verify the resulting GitHub main SHA. No additional publication target is configured.
 
 Keep the existing Route ID to preserve its associations; the maintained repository is `dingxifan/chatgpt-codex`.
 

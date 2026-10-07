@@ -4,9 +4,13 @@
 
 ## 安装 Skill 插件
 
-运行 scripts/Pack-Plugin.ps1 得到 out/codex-dispatch-v0.1.15.zip。已有插件使用其更新入口，保留身份与连接；首次安装使用账号当前支持的插件/Skill 导入入口。开始新会话，确认可以选择 codex-dispatch。若账号没有导入入口，按官方插件/Skills 文档检查可用性，不能用聊天附件代替账号安装。
+运行 scripts/Pack-Plugin.ps1 得到 out/codex-dispatch-v0.1.17.zip。已有插件使用其更新入口，保留身份与连接；首次安装使用账号当前支持的插件/Skill 导入入口。开始新会话，确认可以选择 codex-dispatch。若账号没有导入入口，按官方插件/Skills 文档检查可用性，不能用聊天附件代替账号安装。
 
 v0.1.15 将接收端权限核对作为常规交接要求：工程操作前报告实际 execution context，与用户选择的完全访问核对；不一致就停止，由用户在 Desktop 手动切换，续行时复核后继续同一任务。Codex 不自行修改权限，不重新派发或轮询。用户明确要求受限模式时保留其选择。此更新只改变 Skill，不要求重启 Bridge。
+
+v0.1.16 精简 Skill 的交接规则，保留原有字段、路由、权限、来源核验与回传边界，并明确三种创建结果。开发、审阅、验收沿用项目规则，HACT 不是前提。Skill 更新本身无需重启 Bridge；同批工作区交叉校验、唯一项目匹配和创建结果保护属于 Bridge 源码增量，必须另行构建、部署并核验实际运行副本。仅导入此 ZIP 不代表这些后端保护已生效。
+
+v0.1.17 增加同一次中央读取的可选发布范围：Publish targets 成对列出仓库地址与分支，Publish order 保留 PR／合并／同步顺序；两项均缺省时携带接收端工作区 Git 全同步兜底。只有任务要求的发布动作获准执行，不能因列出目标就推送或合并。逐目标读取实际远端引用核验，部分成功不得宣称全同步；不新增 Project Files 读取或 Bridge API。中央 main 尚未包含这些可选字段时仍兼容；0.1.16 历史 ZIP 保留不覆盖。
 
 ## 中央 Workspace Routing
 
@@ -14,7 +18,7 @@ v0.1.14 每次新派发读取 https://raw.githubusercontent.com/dingxifan/chatgp
 
 按中央表精确匹配 repository/workspace，冻结 computer、namespace 和实际工具句柄；所有 artifact_put 与 codex_start 使用同一 namespace。目标工具不在当前目录中时返回 `WORKSPACE_BRIDGE_UNAVAILABLE`，不尝试另一台机器。2026-10-06 已按用户要求核实并启用 Laptop 的 feishu-collection 和 auchi-laptop 路由；运行时状态仍以中央表本次完整读取为准。未知项目不猜测仓库身份，disabled 项需明确确认后才修改中央表。
 
-从旧版升级应使用两个 manifest 一致声明的目标版本 ZIP（当前 v0.1.15）并开始新会话，核对 Skill 内容。账号已安装相同版本且内容核验相同时不重复导入。导入 ZIP 不代表账号更新成功；Refresh tools 也不能替代 Skill 升级。源码、构建和运行副本的核验见 [发布检查路径](RELEASE-PATH.md)，连接工具元数据仍按下文核验。
+从旧版升级应使用两个 manifest 一致声明的目标版本 ZIP（当前 v0.1.17）并开始新会话，核对 Skill 内容。账号已安装相同版本且内容核验相同时不重复导入。导入 ZIP 不代表账号更新成功；Refresh tools 也不能替代 Skill 升级。源码、构建和运行副本的核验见 [发布检查路径](RELEASE-PATH.md)，连接工具元数据仍按下文核验。
 
 ## 安装 Tunnel 客户端
 

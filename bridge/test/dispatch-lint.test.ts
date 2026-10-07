@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, symlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import test from "node:test";
-import { lintDispatchPrompt } from "../src/dispatch-lint.js";
+import { lintDispatchPrompt, lintDispatchWorkspace as checkWorkspace } from "../src/dispatch-lint.js";
+
+async function lintDispatchWorkspace(prompt: string, workspace: string) { return (await checkWorkspace(prompt, workspace)).issues; }
 
 const validHandoff = `MANDATORY GOAL ACTIVATION
 Activate the Goal before substantive work.
@@ -92,4 +97,30 @@ test("tokens must be UUID v4 and exactly repeated rather than semantic task name
   }
   assert(lintDispatchPrompt(scopedHandoff.replace("b3f29391-ef2c-46ed-912f-1c24d981a4d3", "b3f29391-ef2c-46ed-912f-1c24d981a4d4")).some(issue => issue.field === "Dispatch token"));
   assert(lintDispatchPrompt(scopedHandoff.replaceAll("Conversation title: unavailable", "Conversation title: parent window")).some(issue => issue.field === "FINAL RETURN TARGET.Conversation title"));
+});
+
+test("both handoff workspaces must match the actual filesystem identity", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "dispatch-workspace-"));
+  const actual = path.join(root, "actual"); mkdirSync(actual);
+  const other = path.join(root, "other"); mkdirSync(other);
+  const prompt = validHandoff.replaceAll("/allowed/project", actual);
+  assert.deepEqual(await lintDispatchWorkspace(prompt, actual), []);
+  const wrong = validHandoff.replaceAll("/allowed/project", other);
+  assert.deepEqual(lintDispatchPrompt(wrong), []); // Internally consistent metadata is insufficient.
+  const issues = await lintDispatchWorkspace(wrong, actual);
+  assert.deepEqual(issues.map(issue => issue.field), ["EXECUTION BRIEF.Repository / workspace", "FINAL RETURN TARGET.Repository / workspace"]);
+  const oneWrong = prompt.replace(actual, other);
+  assert.equal((await lintDispatchWorkspace(oneWrong, actual)).length, 1);
+  for (const combined of ["example/project", "example/project / relative", "example/project / " + path.join(root, "missing")]) {
+    assert.equal((await lintDispatchWorkspace(prompt.replaceAll(`example/project / ${actual}`, combined), actual)).length, 2);
+  }
+  assert.equal((await lintDispatchWorkspace(prompt, actual + path.sep + ".." + path.sep + "actual"))[0]?.field, "codex_start.workspace");
+  const alias = path.join(root, "alias");
+  symlinkSync(actual, alias, process.platform === "win32" ? "junction" : "dir");
+  assert.deepEqual(await lintDispatchWorkspace(prompt.replaceAll(actual, alias), actual), []);
+  assert.deepEqual(await lintDispatchWorkspace(prompt, alias), []);
+  if (process.platform === "win32") {
+    const spelling = actual.toUpperCase().replaceAll("\\", "/") + "/";
+    assert.deepEqual(await lintDispatchWorkspace(prompt.replaceAll(actual, spelling), actual), []);
+  }
 });
