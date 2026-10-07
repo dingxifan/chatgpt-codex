@@ -2,8 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 import { ArtifactStore, MAX_ARTIFACT_BYTES } from "./artifacts.js";
-import type { DispatchBackend } from "./desktop.js";
-import { lintDispatchPrompt } from "./dispatch-lint.js";
+import { DispatchError, type DispatchBackend } from "./desktop.js";
+import { lintDispatchPrompt, lintDispatchWorkspace } from "./dispatch-lint.js";
 
 function success(value: Record<string, unknown>) {
   return {
@@ -44,7 +44,7 @@ export function createMcpServer(manager: DispatchBackend, artifacts: ArtifactSto
     {
       title: "Dispatch task to Codex",
       description:
-        "Dispatch a task to Codex in an allowed local project path exposed by the desktop API. Mandatory pre-dispatch LINT requires Goal activation, EXECUTION BRIEF, FINAL RETURN TARGET, and RETURN ROUTING. An unavailable ChatGPT title requires matching Dispatch token UUIDs; no automatic title or project lookup is a prerequisite. If safe return-target verification fails, the receiving Codex must ask the human to identify the window and wait rather than guess or silently finish with manual relay. DISPATCH_LINT_FAILED means no task was created: fix the reported fields before resubmitting. A successful dispatch completes the normal Bridge action. Send the caller prompt unchanged; do not wait for task completion. Do not poll codex_get automatically or proactively; use codex_get only when the user explicitly asks to inspect the job. Codex desktop handles execution and authorization; return instructions belong in the prompt. No private Codex process, callback or wake mechanism.",
+        "Dispatch a task to Codex in an allowed local project path exposed by the desktop API. Mandatory pre-dispatch LINT requires Goal activation, EXECUTION BRIEF, FINAL RETURN TARGET, and RETURN ROUTING. An unavailable ChatGPT title requires matching Dispatch token UUIDs; no automatic title or project lookup is a prerequisite. If safe return-target verification fails, the receiving Codex must ask the human to identify the window and wait rather than guess or silently finish with manual relay. DISPATCH_LINT_FAILED means no task was created: fix the reported fields before resubmitting. Both handoff workspace fields must match the actual workspace after filesystem path normalization. creation_status is created, not_created, or unknown. DISPATCH_OUTCOME_UNKNOWN may mean the native task was created: never automatically redispatch; the Dispatch token is not a native idempotency key. A confirmed job_id remains valid even if navigation fails. A successful dispatch completes the normal Bridge action. Send the caller prompt unchanged; do not wait for task completion. Do not poll codex_get automatically or proactively; use codex_get only when the user explicitly asks to inspect the job. Codex desktop handles execution and authorization; return instructions belong in the prompt. No private Codex process, callback or wake mechanism.",
       inputSchema: {
         workspace: z.string().min(1).describe("Absolute existing directory under an administratively configured allowed root."),
         prompt: z.string().min(1).describe("Complete task instruction, including any input file paths and return conditions."),
@@ -53,11 +53,20 @@ export function createMcpServer(manager: DispatchBackend, artifacts: ArtifactSto
     },
     async ({ workspace, prompt }) => {
       const errors = lintDispatchPrompt(prompt, process.env.CODEX_THREAD_ID);
-      if (errors.length) return { isError: true, ...success({ status: "failed", error_code: "DISPATCH_LINT_FAILED", errors }) };
+      let canonicalWorkspace = workspace;
+      if (!errors.length) {
+        const checked = await lintDispatchWorkspace(prompt, workspace);
+        errors.push(...checked.issues);
+        canonicalWorkspace = checked.canonicalWorkspace ?? workspace;
+      }
+      if (errors.length) return { isError: true, ...success({ status: "failed", creation_status: "not_created", error_code: "DISPATCH_LINT_FAILED", errors }) };
       try {
-        const result = await manager.start(workspace, prompt);
-        return success({ job_id: result.job_id, ...(result.warning ? { warning: result.warning } : {}) });
-      } catch (error) { return failure(error); }
+        const result = await manager.start(canonicalWorkspace, prompt);
+        return success({ creation_status: "created", job_id: result.job_id, ...(result.warning ? { warning: result.warning } : {}) });
+      } catch (error) {
+        const classified = error instanceof DispatchError ? error : new DispatchError("unknown", error instanceof Error ? error.message : String(error));
+        return { isError: true, ...success({ status: classified.creation_status === "unknown" ? "unknown" : "failed", creation_status: classified.creation_status, error_code: classified.error_code, error: classified.message }) };
+      }
     },
   );
 

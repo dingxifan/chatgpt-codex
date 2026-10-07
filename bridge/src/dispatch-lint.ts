@@ -1,3 +1,6 @@
+import path from "node:path";
+import { resolveWorkspacePath } from "./workspaces.js";
+
 export type DispatchLintIssue = {
   rule: "DL001" | "DL002" | "DL003" | "DL004" | "DL005";
   field: string;
@@ -9,8 +12,7 @@ const PLACEHOLDER = /<[^<>]+>|\{\{[^{}]+\}\}|^\[[^\]]+\]$|^(?:TODO|TBD|unknown|�
 const VAGUE_TITLE = /^(?:父窗口|原窗口|发起窗口|本父窗口|(?:the |this |same )?parent(?: window| conversation)?|original window|(?:the )?originating(?: ChatGPT)? conversation(?: that dispatched this task)?)$/i;
 const DISPATCH_TOKEN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-/** Structural checks only. No I/O, permission changes, target lookup or prompt rewrite. */
-export function lintDispatchPrompt(prompt: string, callerThreadId?: string): DispatchLintIssue[] {
+function sectionsOf(prompt: string) {
   const issues: DispatchLintIssue[] = [];
   const add = (rule: DispatchLintIssue["rule"], field: string, message: string) => issues.push({ rule, field, message });
   const sections = new Map<string, string[]>();
@@ -34,6 +36,26 @@ export function lintDispatchPrompt(prompt: string, callerThreadId?: string): Dis
       section = heading;
     } else if (section) sections.get(section)!.push(line);
   }
+  return { sections, order, lines, issues };
+}
+
+function fieldsOf(heading: string, sections: Map<string, string[]>, issues: DispatchLintIssue[]): Map<string, string> {
+  const values = new Map<string, string>();
+  for (const line of sections.get(heading) ?? []) {
+    const match = /^([A-Za-z][A-Za-z /_]*):\s*(.*)$/.exec(line);
+    if (!match) continue;
+    const key = match[1]!;
+    const value = match[2]!.trim();
+    if (values.has(key) && values.get(key) !== value) issues.push({ rule: "DL005", field: `${heading}.${key}`, message: "重复字段给出了不同值。" });
+    else values.set(key, value);
+  }
+  return values;
+}
+
+/** Structural checks only. No I/O, permission changes, target lookup or prompt rewrite. */
+export function lintDispatchPrompt(prompt: string, callerThreadId?: string): DispatchLintIssue[] {
+  const { sections, order, lines, issues } = sectionsOf(prompt);
+  const add = (rule: DispatchLintIssue["rule"], field: string, message: string) => issues.push({ rule, field, message });
   const first = lines.find(line => line.trim())?.trim().replace(/^#{1,6}\s+/, "");
   const activation = sections.get("MANDATORY GOAL ACTIVATION") ?? [];
   const goalAt = activation.findIndex(line => /^\/goal(?:\s|$)/.test(line));
@@ -44,18 +66,7 @@ export function lintDispatchPrompt(prompt: string, callerThreadId?: string): Dis
   if (!HEADINGS.every((heading, index) => order[index] === heading) || order.length !== HEADINGS.length) {
     add("DL005", "sections", "交接区块必须按 MANDATORY GOAL ACTIVATION、EXECUTION BRIEF、FINAL RETURN TARGET、RETURN ROUTING 排列。");
   }
-  const fields = (heading: string): Map<string, string> => {
-    const values = new Map<string, string>();
-    for (const line of sections.get(heading) ?? []) {
-      const match = /^([A-Za-z][A-Za-z /_]*):\s*(.*)$/.exec(line);
-      if (!match) continue;
-      const key = match[1]!;
-      const value = match[2]!.trim();
-      if (values.has(key) && values.get(key) !== value) add("DL005", `${heading}.${key}`, "重复字段给出了不同值。");
-      else values.set(key, value);
-    }
-    return values;
-  };
+  const fields = (heading: string) => fieldsOf(heading, sections, issues);
   const brief = fields("EXECUTION BRIEF");
   const target = fields("FINAL RETURN TARGET");
   const routing = fields("RETURN ROUTING");
@@ -88,4 +99,25 @@ export function lintDispatchPrompt(prompt: string, callerThreadId?: string): Dis
   }
   if (!["auto", "manual"].includes(routing.get("Return mode") ?? "")) add("DL005", "RETURN ROUTING.Return mode", "Return mode 必须为 auto 或 manual。");
   return issues;
+}
+
+/** Filesystem identity check after structural LINT; no desktop call or allowlist change. */
+export async function lintDispatchWorkspace(prompt: string, workspace: string): Promise<{ issues: DispatchLintIssue[]; canonicalWorkspace?: string }> {
+  const { sections } = sectionsOf(prompt);
+  const issues: DispatchLintIssue[] = [];
+  let actual: string;
+  try { actual = await resolveWorkspacePath(workspace); }
+  catch { return { issues: [{ rule: "DL004", field: "codex_start.workspace", message: "实际 workspace 必须是可解析的现有绝对目录，且不含 '..'。" }] }; }
+  for (const heading of ["EXECUTION BRIEF", "FINAL RETURN TARGET"]) {
+    const combined = fieldsOf(heading, sections, issues).get("Repository / workspace") ?? "";
+    const split = combined.indexOf(" / ");
+    try {
+      if (split < 1 || !combined.slice(0, split).trim()) throw new Error("Missing repository/workspace separator");
+      const declared = await resolveWorkspacePath(combined.slice(split + 3));
+      if (path.relative(actual, declared) !== "") throw new Error("Workspace mismatch");
+    } catch {
+      issues.push({ rule: "DL004", field: `${heading}.Repository / workspace`, message: "必须包含 repository / 现有绝对 workspace，并与 codex_start 实际 workspace 的规范路径一致。" });
+    }
+  }
+  return { issues, canonicalWorkspace: actual };
 }

@@ -30,8 +30,7 @@ export function configuredWorkspaceRoots(env: NodeJS.ProcessEnv = process.env): 
   return validateRoots([env.CODEX_WORKSPACE_ROOT ?? DEFAULT_WORKSPACE_ROOT]);
 }
 
-/** Resolve both roots and target before checking containment, including symlink escapes. */
-export async function validateWorkspace(input: string, rootsInput?: string | string[]): Promise<string> {
+function validateInput(input: string): void {
   if (typeof input !== "string" || input.length === 0) {
     throw new WorkspaceValidationError("workspace debe ser una ruta no vacía.");
   }
@@ -40,6 +39,23 @@ export async function validateWorkspace(input: string, rootsInput?: string | str
   if (input.split(/[\\/]/).includes("..")) {
     throw new WorkspaceValidationError("workspace no puede contener segmentos '..'.");
   }
+}
+
+/** Same filesystem identity rules for request, handoff and saved project paths. */
+export async function resolveWorkspacePath(input: string): Promise<string> {
+  validateInput(input);
+  try {
+    const candidate = await realpath(path.resolve(input));
+    if (!(await stat(candidate)).isDirectory()) throw new Error("not a directory");
+    return candidate;
+  } catch {
+    throw new WorkspaceValidationError(`workspace no existe o no puede resolverse: ${input}`);
+  }
+}
+
+/** Resolve both roots and target before checking containment, including symlink escapes. */
+export async function validateWorkspace(input: string, rootsInput?: string | string[]): Promise<string> {
+  validateInput(input);
 
   const roots = rootsInput === undefined
     ? configuredWorkspaceRoots()
@@ -54,13 +70,7 @@ export async function validateWorkspace(input: string, rootsInput?: string | str
       throw new WorkspaceValidationError(`Configured workspace root does not exist or cannot be resolved: ${root}`);
     }
   }
-  let candidate: string;
-  try {
-    candidate = await realpath(path.resolve(input));
-    if (!(await stat(candidate)).isDirectory()) throw new Error("not a directory");
-  } catch {
-    throw new WorkspaceValidationError(`workspace no existe o no puede resolverse: ${input}`);
-  }
+  const candidate = await resolveWorkspacePath(input);
   for (const root of canonicalRoots) {
     const relative = path.relative(root, candidate);
     if (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)) return candidate;

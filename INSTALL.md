@@ -64,10 +64,22 @@ DISPATCH_LINT_FAILED 明确表示尚未调用桌面后端且没有创建任务�
 | DL001 | 缺少 Goal 激活开头、/goal 或具体目标 |
 | DL002 | 缺少 ChatGPT 类型、标题／unavailable 或 ID 声明；仍有占位符或只有“父窗口” |
 | DL003 | 把 Bridge 的 CODEX_THREAD_ID 当作 ChatGPT 收件人 |
-| DL004 | 两个区块的任务、仓库/工作区或 BASE_SHA 不一致，SHA 格式错误，或新信封的 UUID 缺失／不一致 |
+| DL004 | 两个区块的任务、仓库/工作区或 BASE_SHA 不一致，SHA 格式错误，新信封的 UUID 缺失／不一致，或实际 workspace 与两处声明的规范目录不一致 |
 | DL005 | 区块缺失/乱序/重复、重复字段冲突，或 Return mode 不是 auto/manual |
 
 固定区块和行内字段格式见 [Skill](plugin/codex-dispatch/skills/codex-dispatch/SKILL.md)。本校验不确认标题/ID 的真实性、不扫描附件语义冲突，也不控制接收端后续发送动作。
+
+新增工作区与创建结果保护需要构建并部署实际 Bridge 后才生效。`Repository / workspace` 仍使用 `repository / 绝对路径` 格式；两处字符串须一致，并与实际 workspace 按现有 realpath、大小写／分隔符和 junction 规则匹配。通过检查的规范路径交给后端，allowlist 检查仍由后端执行。Desktop 项目必须有且只有一个规范路径匹配；零匹配、多个匹配或缺少有效 projectId 都在 create_thread 前拒绝。
+
+codex_start 输入参数和工具集合不变，输出新增 `creation_status`：
+
+| creation_status | 返回与处理 |
+| --- | --- |
+| created | 确认 threadId，保留原 job_id。导航失败仍返回同一个 job_id 与 warning；不得因此重新创建 |
+| not_created | status=failed；LINT 使用 DISPATCH_LINT_FAILED，其它可确定的提交前拒绝使用 DISPATCH_REJECTED。修正已报告的问题后才能考虑新提交 |
+| unknown | isError=true、status=unknown、error_code=DISPATCH_OUTCOME_UNKNOWN。进入创建调用后超时、断线、原生错误／无效响应或缺少确认 threadId（包括只有 clientThreadId 的待设置结果），均不证明未创建。停止自动重派，由用户检查 Desktop 后决定下一步 |
+
+调用前已断连且本地适配器明确没有发送请求时属于 not_created；已发送后的原生错误响应不能仅凭报错文本当成确定拒绝。Dispatch token 是交接证据，不是原生幂等键，不承诺 exactly-once。输出仍通过 JSON 文本与 structuredContent 返回；原来只处理 status=failed 的调用方需同时处理 unknown。未知自定义后端错误也保守返回 unknown。没有新增重试、任务数据库、状态查询服务或回调；codex_get 仍只用于用户明确要求的一次查询。
 
 脚本启动隐藏进程，输出新进程 PID 和日志位置。维护者只管理本次创建的进程，不关闭其他 Bridge/Tunnel。它不是服务、监督程序或自动重启机制。
 

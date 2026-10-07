@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { DesktopCodex, type NativeCall } from "../src/desktop.js";
+import { DesktopCodex, DispatchError, NativeCallNotSubmittedError, parseNativeResult, type NativeCall } from "../src/desktop.js";
 
 function fixture(failNavigation = false) {
   const root = mkdtempSync(path.join(tmpdir(), "desktop-bridge-"));
@@ -101,4 +101,67 @@ test("Windows saved project paths match case, separators, trailing slash and jun
   }
   assert.equal(calls.filter(c => c.name === "list_projects").length, 3);
   assert.equal(calls.some(c => c.name === "wait_threads"), false);
+});
+
+test("multiple normalized saved-project matches are rejected before creation", async () => {
+  const { root, workspace } = fixture();
+  const { symlinkSync } = await import("node:fs");
+  const alias = path.join(root, "alias");
+  symlinkSync(workspace, alias, process.platform === "win32" ? "junction" : "dir");
+  for (const spelling of [workspace + path.sep, alias, ...(process.platform === "win32" ? [workspace.toUpperCase().replaceAll("\\", "/")] : [])]) {
+    const calls: string[] = [];
+    const desktop = new DesktopCodex([root], 1000, async name => {
+      calls.push(name);
+      if (name === "list_projects") return { projects: [workspace, spelling].map((saved, index) => ({ projectId: `project-${index}`, projectKind: "local", hostId: "local", path: saved })) };
+      throw new Error("ambiguous lookup must not create or query");
+    });
+    await assert.rejects(desktop.start(workspace, "task"), error => error instanceof DispatchError && error.creation_status === "not_created" && /multiple local/.test(error.message));
+    assert.deepEqual(calls, ["list_projects"]);
+  }
+});
+
+test("lookup failure or invalid project identity is a confirmed pre-submit rejection", async () => {
+  const { root, workspace } = fixture();
+  for (const response of ["disconnect", { projects: null }, { projects: [{ projectKind: "local", hostId: "local", path: workspace }] }]) {
+    const calls: string[] = [];
+    const desktop = new DesktopCodex([root], 1000, async name => {
+      calls.push(name);
+      if (response === "disconnect") throw new Error("list transport disconnected");
+      return response;
+    });
+    await assert.rejects(desktop.start(workspace, "task"), error => error instanceof DispatchError && error.error_code === "DISPATCH_REJECTED" && error.creation_status === "not_created");
+    assert.deepEqual(calls, ["list_projects"]);
+  }
+});
+
+for (const fault of ["timeout", "disconnect", "invalid-json", "native-error", "array-json", "missing-id", "pending-id", "conflicting-id"] as const) test(`submitted ${fault} is unknown and never automatically retried`, async () => {
+  const { root, workspace } = fixture();
+  const calls: string[] = [];
+  const desktop = new DesktopCodex([root], 1000, async name => {
+    calls.push(name);
+    if (name === "list_projects") return { projects: [{ projectId: "p", projectKind: "local", hostId: "local", path: workspace }] };
+    assert.equal(name, "create_thread");
+    if (fault === "timeout" || fault === "disconnect") throw new Error(fault);
+    if (fault === "missing-id") return {};
+    if (fault === "pending-id") return { clientThreadId: "setup-in-progress" };
+    if (fault === "conflicting-id") return parseNativeResult(name, { structuredContent: { threadId: "structured-id" }, content: [{ type: "text", text: '{"threadId":"different-id"}' }] });
+    return parseNativeResult(name, { isError: fault === "native-error", content: [{ type: "text", text: fault === "array-json" ? "[]" : "invalid response" }] });
+  });
+  await assert.rejects(desktop.start(workspace, "task"), error => error instanceof DispatchError && error.creation_status === "unknown" && error.error_code === "DISPATCH_OUTCOME_UNKNOWN" && /Do not redispatch automatically/.test(error.message));
+  assert.deepEqual(calls, ["list_projects", "create_thread"]);
+});
+
+test("native disconnected-before-send marker preserves not-created classification", async () => {
+  const { root, workspace } = fixture();
+  const desktop = new DesktopCodex([root], 1000, async name => {
+    if (name === "list_projects") return { projects: [{ projectId: "p", projectKind: "local", hostId: "local", path: workspace }] };
+    throw new NativeCallNotSubmittedError("not connected before sending create_thread");
+  });
+  await assert.rejects(desktop.start(workspace, "task"), error => error instanceof DispatchError && error.creation_status === "not_created");
+});
+
+test("usable structured native acknowledgement preserves the confirmed identity", () => {
+  assert.deepEqual(parseNativeResult("create_thread", { content: [{ type: "text", text: "Action completed." }], structuredContent: { threadId: "confirmed" } }), { threadId: "confirmed" });
+  assert.deepEqual(parseNativeResult("create_thread", { content: [{ type: "text", text: '{"threadId":"legacy-confirmed"}' }] }), { threadId: "legacy-confirmed" });
+  assert.deepEqual(parseNativeResult("create_thread", { structuredContent: { threadId: "confirmed" }, content: [{ type: "text", text: '{"threadId":"confirmed"}' }] }), { threadId: "confirmed" });
 });
