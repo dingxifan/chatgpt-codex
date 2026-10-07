@@ -10,7 +10,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node ../scripts/Build-Info.mjs",
     "start": "node dist/src/index.js",
     "dev": "tsx src/index.ts",
     "test": "tsx --test test/*.test.ts",

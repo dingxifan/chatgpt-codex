@@ -14,7 +14,7 @@ v0.1.14 每次新派发读取 https://raw.githubusercontent.com/dingxifan/chatgp
 
 按中央表精确匹配 repository/workspace，冻结 computer、namespace 和实际工具句柄；所有 artifact_put 与 codex_start 使用同一 namespace。目标工具不在当前目录中时返回 `WORKSPACE_BRIDGE_UNAVAILABLE`，不尝试另一台机器。2026-10-06 已按用户要求核实并启用 Laptop 的 feishu-collection 和 auchi-laptop 路由；运行时状态仍以中央表本次完整读取为准。未知项目不猜测仓库身份，disabled 项需明确确认后才修改中央表。
 
-从旧版升级应重新导入 v0.1.14 ZIP 并使用新会话，核对 Skill 已读取中央 URL。导入 ZIP 不代表账号更新成功；本次没有改变 Bridge 工具接口，Refresh tools 也不能替代 Skill 升级。连接工具元数据仍按下文核验，实际看见旧定义时由账号管理入口刷新。
+从旧版升级应使用两个 manifest 一致声明的目标版本 ZIP（当前 v0.1.15）并开始新会话，核对 Skill 内容。账号已安装相同版本且内容核验相同时不重复导入。导入 ZIP 不代表账号更新成功；Refresh tools 也不能替代 Skill 升级。源码、构建和运行副本的核验见 [发布检查路径](RELEASE-PATH.md)，连接工具元数据仍按下文核验。
 
 ## 安装 Tunnel 客户端
 
