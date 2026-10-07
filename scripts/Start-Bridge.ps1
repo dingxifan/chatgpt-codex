@@ -20,6 +20,8 @@ $config = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $taskRoot '.lo
 if ($config.port -lt 1 -or $config.port -gt 65535 -or @($config.workspaceRoots).Count -eq 0) { throw 'Invalid local configuration.' }
 $entry = Join-Path $taskRoot 'bridge\dist\src\index.js'
 if (-not (Test-Path -LiteralPath $entry)) { throw 'Build missing; run Install.ps1 first.' }
+& (Get-Command node -ErrorAction Stop).Source (Join-Path $taskRoot 'scripts\Build-Info.mjs') --verify
+if ($LASTEXITCODE -ne 0) { throw 'Build provenance missing or mismatched; run Install.ps1/build before starting. No process was started.' }
 $listener = New-Object System.Net.Sockets.TcpListener([Net.IPAddress]::Loopback, [int]$config.port)
 try { $listener.Start() } catch { throw 'Selected port is occupied; identify the existing service or choose another port. No process was stopped.' } finally { $listener.Stop() }
 $handoff = if ([IO.Path]::IsPathRooted($config.handoffRoot)) { $config.handoffRoot } else { Join-Path $taskRoot $config.handoffRoot }

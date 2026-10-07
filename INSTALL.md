@@ -27,6 +27,8 @@ LAPTOP-H80BPPA5 已有安装的升级顺序见 [Laptop v0.1.14 升级步骤](doc
 
 ## 3. 验证源码
 
+`npm run build` 会生成 `bridge/dist/build-info.json`，记录 Git 来源（含 dirty 状态）、包版本及源码／产物 SHA256。在仓库根运行 `node scripts/Build-Info.mjs --verify` 校验；Start-Bridge.ps1 也会在启动前校验。缺少或不匹配时必须重建。实际运行副本、账户插件和会话定义仍按 [发布检查路径](docs/RELEASE-PATH.md) 单独核验。
+
 ```powershell
 Push-Location bridge
 $env:CODEX_WORKSPACE_ROOT = (Get-Location).Path
