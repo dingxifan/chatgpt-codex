@@ -61,3 +61,31 @@
 启动核查：旧运行副本 start-environment.ps1 调用 start-bridge.ps1；后者检查当前会话 PIPE／THREAD／MCP_NODE_PATH，而实际 Start-Process 使用已存在的普通 node.exe。本轮 Process、User、Machine 的 MCP_NODE_PATH 均不存在，不能据此断言其它 Desktop 会话也缺失，更不需要永久全局设置。当前 `Get-Command node` 得到的可执行文件与旧服务实际可执行文件一致，可在本次启动 PowerShell 进程内临时执行 `$env:CODEX_MCP_NODE_PATH = (Get-Command node -ErrorAction Stop).Source`，不持久化或复制 PIPE／THREAD。启动脚本所用已安装 App Tools 0.1.5 server.mjs 存在。
 
 用户已授权本阶段提交推送和运行切换，但未授权合并 main。部署先从已提交内容准备同结构的新副本（bridge 与 scripts），复用经相同锁文件确认的现有依赖，保留旧副本完整作为回滚。先在既有空闲 18787 配置验证当前上下文和工具定义并停止该临时验证进程，再通过旧 stop-bridge.ps1 的 PID／时间／入口检查停止旧 8787；启动新副本、检查来源、ready、文本落盘与定义。若新副本未就绪，停止经身份确认的新进程，再以相同当前 Desktop 上下文启动保留的旧副本。Tunnel profile、网络、安全权限、凭据、handoff 与 allowlist 保持既有配置。此处记录计划；实际提交、部署与回滚结果以阶段交付报告为准，不预先宣称成功。
+
+## 2026-10-07 获准切换后的事实
+
+代码提交 `d998c8cfb0be8281dfa85ccd00846b6a697dc649` 已推送到 `fix/release-path-verification`，未合并 main。本节是随后追加的文档记录，不改变部署代码或将文档提交冒充运行代码来源。
+
+| 项目 | 核实结果 |
+| --- | --- |
+| 当前 Bridge 根 | `C:\Users\Administrator\.codex-agent-mcp\runtime-desktop-dispatch-20261007-d998c8c\bridge` |
+| 当前入口／PID／端口 | 根目录下 `dist\src\index.js`；PID 40128；8787 |
+| 当前启动入口 | 根目录下 `start-bridge.ps1`；从有效 Desktop 会话启动，新增构建摘要闸门。start-environment.ps1 同样指向新副本，但本次未调用其中的 Tunnel 启动逻辑 |
+| 来源 | runtime-source.json 与 dist/build-info.json 均指向 d998c8c，dirty=false；新副本摘要校验通过 |
+| 连接 | health ok；ready=true；desktop_connected=true；既有 Tunnel runtime_state=ready、healthy=true、stale=false、ready=true |
+| 定义 | artifact_put、codex_start、codex_get 全部 matches_build=true；codex_start 摘要为前述构建的 f4a6c242…，当前描述开头 Dispatch a task… |
+| 文本落盘 | Test-Bridge 普通模式通过；文件为既有 handoff 根的 installation-check-26e5c5f3-4875-4558-b3c0-0e5ceff8fef3.txt，SHA256 `245d3898c57b67584df29f21c0d5be88872fff8fff515f5c30113fe92738cbe2` |
+| 配置保留 | 新旧脚本的 workspaceRoots、handoffRoot、App Tools server 表达式逐字一致；未修改 Tunnel profile、网络、安全权限或凭据 |
+| 临时验证 | 18787 先验证当前上下文可用、定义一致，再停止临时 PID 41404；最终该端口无监听 |
+| 回滚 | 原 runtime-desktop-dispatch-20261001 完整保留；其停止脚本 PID／开始时间／入口闸门全部核验，旧 PID 29088 已正常停止。新副本成功，未触发回滚，也未额外演练一次来回切换 |
+
+以后启动使用当前入口，而不是部署前快照中的旧入口；不要复用本次 PIPE／THREAD。当前上下文只需对普通 Node 路径作进程内设置：
+
+```powershell
+$env:CODEX_MCP_NODE_PATH = (Get-Command node -ErrorAction Stop).Source
+& 'C:\Users\Administrator\.codex-agent-mcp\runtime-desktop-dispatch-20261007-d998c8c\bridge\start-bridge.ps1'
+```
+
+需回滚时，先运行当前副本 stop-bridge.ps1（会重新核实 PID、时间与入口），再从当前有效 Desktop 上下文运行旧副本 start-bridge.ps1；两者不能同时占用 8787。旧副本恢复的工具文案会回到已知旧定义，这是明确回滚结果，不能继续声称与 d998c8c 一致。若进程身份或活动状态检查拒绝，先诊断，不强制终止其它进程。
+
+切换后 PREPARED 与 LOCAL_READY 已验证。GitHub main 合并、账户插件发布版本和刷新后的新会话定义仍待父任务；CHATGPT_CONNECTED 的新定义验收与 END_TO_END_VERIFIED 均 pending。本轮始终未调用 codex_start／codex_get，未实现第二项保护或第三项 Skill 精简。
