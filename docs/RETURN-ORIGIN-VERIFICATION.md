@@ -115,3 +115,7 @@ Bridge 新 PID 为 9964，实际监听 127.0.0.1:8787，ready=true、desktop_con
 | 消息发送结果不明 | 标记 unconfirmed，保留完整结果，不自动重发 |
 
 两个 manifest 同步升为 0.1.19，固定派发信封／字段／LINT 不变。新版静态保护覆盖独立路径、替代证据、直接确认结束核验、浏览器补读、长期许可、错误分类及发送不明不重试。Bridge 源码、Tunnel、中央执行路由、任务创建机制和工程权限不变；无需为此重启服务。
+
+验证与发布：typecheck/build 通过，73 项 Bridge 测试和 15 项 Skill／发布检查全部通过；新版返回合同保护属于静态检查，不代表模型行为或真实发送已验收。0.1.19 ZIP 生成及逐文件 VerifyOnly 通过，SHA256=`4CE87FD4DBBA2C54E6544F0FA10097DAA5BCCBDADE03F0D09293A5B1412474A5`。现有 private USER 插件原位更新至 0.1.19，release=`pluginrel_6ac73677d8548191addb9a751b9ece52`；发布后回读两个 manifest 和 Skill，归一化行尾后均与本地源码一致，身份／范围／元数据保持不变。Skill SHA256=`24CAD50ED350DB839556259AC4B0C401787A517F4E018A285FD1E5236CEFBE71`。规则提交 `259a8cf` 已推送至原修复分支并继续使用 PR #9；本节随后作为发布证据提交。新会话实际加载和新版真实回传仍 pending，未新派发或发送消息测试。
+
+token 读取本身没有新增 API 或后台搜索：read_thread 的引用正文问题没有在本仓库修复。需要 token 原文时，安全正文读取分支可进入已观察准确候选；此前维护桌面 Chrome 已实测读到本例原助手 token 与 Job ID。0.1.19 改变的是 token 缺失时的判断：自动路径允许其它充分独立证据，直接人类指定路径无需原 sender token；仍不能以复制 token 或标题单项判定自动来源。不承诺 Laptop 的正文读取能力或每次自动查找成功。
