@@ -68,10 +68,18 @@
 
 真实 R1/R2 验收需从原始 ChatGPT 自然发起一项明确只读任务，实际观察进入正确项目、唯一来源证据、适用人类许可、发送工具成功及原对话收件内容。账号安装更新、宿主正文能力和真实闭环分别报告；不能用本地 ZIP、元数据刷新、旧任务后续送达或静态测试替代此次新版 E2E。
 
-## 本轮交付边界
+## 初次本地交付边界
 
 源码／打包修复：本地候选。账号插件更新：pending。宿主原始助手正文读取：当前 read_thread 未提供；当前维护桌面浏览器已读到助手派发／创建记录，Laptop 替代读取能力 pending。新版无人确认端到端：pending。既有阶段 2 报告：已观察接收内容和人工恢复说明，旧工程状态仍为 blocked。
 
 不修改飞书工程、生产操作、权限配置、Bridge 运行进程或中央路由；不推送、合并或发布账号插件。具体本地测试结果在本轮最终交付中记录。
 
 本地验证：Bridge typecheck 与 build 通过，73 项 Bridge 测试通过，13 项 Skill／发布检查通过（其中新增 4 项为静态返回合同保护），git diff --check 通过。Pack-Plugin.ps1 生成并以 -VerifyOnly 验证 `out/codex-dispatch-v0.1.18.zip`；SHA256=`48605D6610CD711334CCAC2DC268FFA1AEB516D600F9FB9A77BF6FE62DFFA398`。旧包保留。此次源码候选可审阅和打包，不等于账号安装或 Laptop E2E 完成。
+
+## 获准更新与提交后的交付（2026-10-08）
+
+用户随后明确要求完成更新提交。账号现有 private USER 插件 `Plugin_a1bd3a7655788191ab8b18db2893fa02` 已通过 update_plugin 从 0.1.17 原位更新为 0.1.18；保持身份、scope、discoverability 和既有元数据。新 release 为 `pluginrel_6ac7303a20d08191a4d719d3b276ef62`。发布后回读三个文件，两个 manifest 和 Skill 均与本地源码逐字匹配（仅归一化行尾），不是只凭 API acknowledgement 判定。Skill SHA256=`F042202B239F366DF63D848D00BA0F26F5EE00BF4622605FA95315958E8EE168`。
+
+修复代码提交 `81a6ec0` 与历史能力说明提交 `bb24d0e` 已推送至 `codex/fix-return-origin-evidence`，创建 [draft PR #9](https://github.com/dingxifan/chatgpt-codex/pull/9) 并附到本聊天。实际远端分支 SHA 与本地一致；本节随后作为交付记录提交。当前中央表规定 draft PR 后的合并另需人类授权，尚未合并 main，不把任务分支推送称为 main 已同步。
+
+没有改动 Bridge 源码，故本次 Skill 更新不需要重启服务或改工具元数据。本轮额外只读定义检查连接 `127.0.0.1:8787` 返回 ECONNREFUSED；维护配置指定 18787，进一步本机监听检查未见 8787／18787 监听，也未观察到已知 Bridge entry 的 Node 进程。这只描述当前维护机器检查结果，不证明 Laptop Bridge 不可用，不猜测或切换服务。未重启、部署或更改 Tunnel／权限。账号源码发布已验证；新会话实际加载、Laptop 正文读取能力及无人确认 E2E 仍 pending，未新派发或发送测试消息。
