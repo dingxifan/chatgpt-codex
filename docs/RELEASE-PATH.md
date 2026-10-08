@@ -4,7 +4,7 @@
 
 ## 版本约定
 
-- Dispatch 插件版本以 `plugin/codex-dispatch/plugin.json` 和 `.codex-plugin/plugin.json` 的一致声明为准，当前为 `0.1.17`。Skill 正文没有版本标签，以 SHA256 比较内容。
+- Dispatch 插件版本以 `plugin/codex-dispatch/plugin.json` 和 `.codex-plugin/plugin.json` 的一致声明为准，当前为 `0.1.18`。Skill 正文没有版本标签，以 SHA256 比较内容。
 - Bridge package 和 MCP server 保留上游包版本 `0.3.1`。它与插件分开编号，不能把插件版本写到 Bridge 上来制造一致性。相同 Bridge 包版本的补丁用 Git commit、dirty 状态、源码／产物摘要和工具定义辨别。
 - 路由文档中 `v0.1.14` 表示中央路由引入版本，Laptop 升级文档和旧安装记录是历史快照；不批量改写历史版本。
 - 插件内容改变且要发布时，按现有语义版本约定同时更新两个 manifest，保留旧 ZIP。只有文档／发布检查改动且插件内容不变时无需增加插件版本。下文第一阶段快照没有更改 Skill 或工具接口；后续 Skill／源码变更仍按各层分别发布核验，不能把该历史结论套到当前修改。

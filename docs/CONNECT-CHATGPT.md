@@ -4,7 +4,7 @@
 
 ## 安装 Skill 插件
 
-运行 scripts/Pack-Plugin.ps1 得到 out/codex-dispatch-v0.1.17.zip。已有插件使用其更新入口，保留身份与连接；首次安装使用账号当前支持的插件/Skill 导入入口。开始新会话，确认可以选择 codex-dispatch。若账号没有导入入口，按官方插件/Skills 文档检查可用性，不能用聊天附件代替账号安装。
+运行 scripts/Pack-Plugin.ps1 得到 out/codex-dispatch-v0.1.18.zip。已有插件使用其更新入口，保留身份与连接；首次安装使用账号当前支持的插件/Skill 导入入口。开始新会话，确认可以选择 codex-dispatch。若账号没有导入入口，按官方插件/Skills 文档检查可用性，不能用聊天附件代替账号安装。
 
 v0.1.15 将接收端权限核对作为常规交接要求：工程操作前报告实际 execution context，与用户选择的完全访问核对；不一致就停止，由用户在 Desktop 手动切换，续行时复核后继续同一任务。Codex 不自行修改权限，不重新派发或轮询。用户明确要求受限模式时保留其选择。此更新只改变 Skill，不要求重启 Bridge。
 
@@ -12,13 +12,15 @@ v0.1.16 精简 Skill 的交接规则，保留原有字段、路由、权限、�
 
 v0.1.17 增加同一次中央读取的可选发布范围：Publish targets 成对列出仓库地址与分支，Publish order 保留 PR／合并／同步顺序；两项均缺省时携带接收端工作区 Git 全同步兜底。只有任务要求的发布动作获准执行，不能因列出目标就推送或合并。逐目标读取实际远端引用核验，部分成功不得宣称全同步；不新增 Project Files 读取或 Bridge API。中央 main 尚未包含这些可选字段时仍兼容；0.1.16 历史 ZIP 保留不覆盖。
 
+v0.1.18 将返回来源证据明确拆为人类发起请求、助手派发记录、Bridge 创建结果／助手创建确认和接收端可信 native handle。用户无需提前提供尚未生成的 token 或 job_id。原始消息的角色、次序及同次派发关联必须可读；助手正文返回 chatgpt-content-reference 时不能当成已读，可用受支持正文读取能力核验同一候选，否则明确报告读取缺口并等待本次来源识别。可读、适用、未撤销的原始人类长期授权按实际发送工具合同复用，不重复索要许可；不扩大工程或发布权限。此次仅更新 Skill，无 Bridge 接口或服务改动，不需因本次修复重启 Bridge。已观察的 Desktop read_thread 正文限制仍可能阻止无人确认的自动回传，不能仅靠导入 ZIP 宣称闭环完成。事实与验收用例见 [来源回传核查](RETURN-ORIGIN-VERIFICATION.md)。
+
 ## 中央 Workspace Routing
 
 v0.1.14 每次新派发读取 https://raw.githubusercontent.com/dingxifan/chatgpt-codex/main/config/CODEX_WORKSPACE_ROUTING.md 的完整当前内容。唯一权威源为 `dingxifan/chatgpt-codex` / `main` / `config/CODEX_WORKSPACE_ROUTING.md`。Project / Space 无需保存 routing table，遗留副本不参与路由。中央源读取或验证失败返回 `WORKSPACE_ROUTING_TABLE_UNAVAILABLE`，在任何 artifact 写入和 codex_start 前停止；没有 Project Files、Memory、历史、本地副本或其它仓库 fallback。
 
 按中央表精确匹配 repository/workspace，冻结 computer、namespace 和实际工具句柄；所有 artifact_put 与 codex_start 使用同一 namespace。目标工具不在当前目录中时返回 `WORKSPACE_BRIDGE_UNAVAILABLE`，不尝试另一台机器。2026-10-06 已按用户要求核实并启用 Laptop 的 feishu-collection 和 auchi-laptop 路由；运行时状态仍以中央表本次完整读取为准。未知项目不猜测仓库身份，disabled 项需明确确认后才修改中央表。
 
-从旧版升级应使用两个 manifest 一致声明的目标版本 ZIP（当前 v0.1.17）并开始新会话，核对 Skill 内容。账号已安装相同版本且内容核验相同时不重复导入。导入 ZIP 不代表账号更新成功；Refresh tools 也不能替代 Skill 升级。源码、构建和运行副本的核验见 [发布检查路径](RELEASE-PATH.md)，连接工具元数据仍按下文核验。
+从旧版升级应使用两个 manifest 一致声明的目标版本 ZIP（当前 v0.1.18）并开始新会话，核对 Skill 内容。账号已安装相同版本且内容核验相同时不重复导入。导入 ZIP 不代表账号更新成功；Refresh tools 也不能替代 Skill 升级。源码、构建和运行副本的核验见 [发布检查路径](RELEASE-PATH.md)，连接工具元数据仍按下文核验。
 
 ## 安装 Tunnel 客户端
 

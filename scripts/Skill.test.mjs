@@ -24,7 +24,7 @@ test('both manifests advance together without changing plugin identity or interf
   for (const relative of ['plugin/codex-dispatch/plugin.json', 'plugin/codex-dispatch/.codex-plugin/plugin.json']) {
     const current = JSON.parse(readFileSync(path.join(root, relative), 'utf8'));
     const old = JSON.parse(execFileSync('git', ['show', `dd5a7b6185bad75b0b42f64a415a2505d2339497:${relative}`], { cwd: root, encoding: 'utf8' }));
-    assert.equal(current.version, '0.1.17');
+    assert.equal(current.version, '0.1.18');
     assert.equal(old.version, '0.1.15');
     delete current.version;
     delete old.version;
@@ -129,4 +129,42 @@ test('consistent but wrong workspace and conflicting token remain rejected', asy
     rmdirSync(actual);
     rmdirSync(other);
   }
+});
+
+// These are contract guards, not an executable origin verifier or model/E2E tests.
+const receiverReturn = skill.split('## 5. Receiver final return\n')[1].split('## 6. Result and truthful completion\n')[0];
+test('static return contract separates human initiation, assistant dispatch and confirmed native creation', () => {
+  assert.match(receiverReturn, /records may be DIFFERENT messages, not one original human message/);
+  assert.match(receiverReturn, /Do NOT require the original human request to contain an assistant-generated Dispatch token\/Task identity or a later-created job_id/);
+  assert.match(receiverReturn, /original ASSISTANT pre-dispatch record[\s\S]*all four must match the received envelope/);
+  assert.match(receiverReturn, /original ASSISTANT post-creation record[\s\S]*SAME four values and dispatch[\s\S]*receiver's own native handle/);
+  assert.match(receiverReturn, /surrounding request\/dispatch\/creation sequence and message provenance/);
+  assert.match(receiverReturn, /exactly ONE verified candidate plus sufficient relevant-content coverage/);
+  assert.match(receiverReturn, /later returned report, pasted execution brief, quoted history[\s\S]*cannot substitute for the original records/);
+});
+
+test('static return contract treats opaque references as missing bodies and preserves bounded fail-closed lookup', () => {
+  assert.match(receiverReturn, /chatgpt-content-reference[\s\S]*NOT the referenced assistant body; hasMore=false does not prove body coverage/);
+  assert.match(receiverReturn, /available supported full-content reader[\s\S]*SAME candidate scope/);
+  assert.match(receiverReturn, /never infer content from a reference ID, fabricate a link, call private endpoints or expand the search/);
+  assert.match(receiverReturn, /report exactly which original request\/dispatch\/creation record cannot be read/);
+  assert.match(receiverReturn, /ONE limit:20 listing[\s\S]*FIRST 10 pinned entries/);
+  assert.match(receiverReturn, /If ambiguity remains[\s\S]*wait/);
+});
+
+test('static return contract reuses verified standing human permission without extending engineering authority', () => {
+  assert.match(receiverReturn, /readable original human standing authorization[\s\S]*SAME verified origin[\s\S]*not been revoked or narrowed[\s\S]*send-tool contract admits that evidence/);
+  assert.match(receiverReturn, /Do not demand that it name future tokens\/job IDs/);
+  assert.match(receiverReturn, /Verify source identity separately for every dispatch/);
+  assert.match(receiverReturn, /Unreadable authorization is authorization_unverified; absent applicable authorization is authorization_required/);
+  assert.match(receiverReturn, /stricter actual tool contract remains binding/);
+  assert.match(receiverReturn, /Return authorization grants no code, production or Git publication authority/);
+  assert.match(receiverReturn, /ambiguous send must NOT be resent or switched automatically/);
+});
+
+test('static result contract distinguishes source-read failures from permission failures without new protocol fields', () => {
+  assert.match(skill, /Distinguish unreadable dispatch\/creation bodies, native-handle mismatch and multiple candidates from authorization gaps/);
+  assert.match(skill, /These assistant messages are dispatch evidence, not human authorization or a registry/);
+  assert.equal(skeleton.match(/^Bound conversation ID: unavailable$/gm).length, 1);
+  assert.match(skill, /Do not add HACT state, receipts, registries\/caches[\s\S]*watchers, schedulers/);
 });
