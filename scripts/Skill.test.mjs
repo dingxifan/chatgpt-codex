@@ -24,7 +24,7 @@ test('both manifests advance together without changing plugin identity or interf
   for (const relative of ['plugin/codex-dispatch/plugin.json', 'plugin/codex-dispatch/.codex-plugin/plugin.json']) {
     const current = JSON.parse(readFileSync(path.join(root, relative), 'utf8'));
     const old = JSON.parse(execFileSync('git', ['show', `dd5a7b6185bad75b0b42f64a415a2505d2339497:${relative}`], { cwd: root, encoding: 'utf8' }));
-    assert.equal(current.version, '0.1.18');
+    assert.equal(current.version, '0.1.19');
     assert.equal(old.version, '0.1.15');
     delete current.version;
     delete old.version;
@@ -133,29 +133,63 @@ test('consistent but wrong workspace and conflicting token remain rejected', asy
 
 // These are contract guards, not an executable origin verifier or model/E2E tests.
 const receiverReturn = skill.split('## 5. Receiver final return\n')[1].split('## 6. Result and truthful completion\n')[0];
-test('static return contract separates human initiation, assistant dispatch and confirmed native creation', () => {
-  assert.match(receiverReturn, /records may be DIFFERENT messages, not one original human message/);
-  assert.match(receiverReturn, /Do NOT require the original human request to contain an assistant-generated Dispatch token\/Task identity or a later-created job_id/);
-  assert.match(receiverReturn, /original ASSISTANT pre-dispatch record[\s\S]*all four must match the received envelope/);
-  assert.match(receiverReturn, /original ASSISTANT post-creation record[\s\S]*SAME four values and dispatch[\s\S]*receiver's own native handle/);
-  assert.match(receiverReturn, /surrounding request\/dispatch\/creation sequence and message provenance/);
-  assert.match(receiverReturn, /exactly ONE verified candidate plus sufficient relevant-content coverage/);
-  assert.match(receiverReturn, /later returned report, pasted execution brief, quoted history[\s\S]*cannot substitute for the original records/);
+const nativePath = receiverReturn.split('**Path 1 — trustworthy native binding.**')[1].split('**Path 2')[0];
+const automaticPath = receiverReturn.split('**Path 2 — automatic lookup and verification.**')[1].split('**Path 3')[0];
+const directPath = receiverReturn.split("**Path 3 — human directly specifies or confirms this result's destination.**")[1].split('**Insufficient readable content.**')[0];
+const contentRead = receiverReturn.split('**Insufficient readable content.**')[1];
+
+test('static return contract makes three paths independent and requires actual native binding', () => {
+  assert.match(receiverReturn, /any ONE of three independent verification paths/);
+  assert.match(receiverReturn, /alternatives, not cumulative requirements/);
+  assert.match(receiverReturn, /already applicable direct human destination instruction can use path 3 immediately/);
+  assert.match(nativePath, /documented\/runtime binding proves it reaches this dispatch's actual ChatGPT origin/);
+  assert.match(nativePath, /tool name, Bridge caller thread or merely routable handle is insufficient/);
 });
 
-test('static return contract treats opaque references as missing bodies and preserves bounded fail-closed lookup', () => {
+test('static automatic path keeps the full chain as strong evidence without making it the only form', () => {
+  assert.match(receiverReturn, /records may be DIFFERENT messages, not one original human message/);
+  assert.match(receiverReturn, /Do NOT require the original human request to contain an assistant-generated Dispatch token\/Task identity or a later-created job_id/);
+  assert.match(automaticPath, /match the four task fields and confirmed job_id[\s\S]*message provenance and the surrounding sequence/);
+  assert.match(automaticPath, /complete chain is NOT the only acceptable evidence form/);
+  assert.match(automaticPath, /independently corroborated readable original task\/dispatch context or trustworthy current-dispatch runtime evidence/);
+  assert.match(automaticPath, /Do not turn any single missing field, unknown handle or unreadable message class into an automatic rejection/);
+  assert.match(automaticPath, /exactly ONE verified candidate[\s\S]*enough relevant coverage/);
+  assert.match(automaticPath, /same-title ambiguity, task conflicts or an unproven link[\s\S]*remain unverified/);
+  assert.match(automaticPath, /exact title, copied token, forwarded report[\s\S]*ALONE cannot establish automatic origin or human send permission/);
+});
+
+test('static direct human path accepts unique exact titles and terminates original-chain verification', () => {
+  assert.match(directPath, /actual human instruction[\s\S]*THIS task's result[\s\S]*destination's actual ChatGPT identity/);
+  assert.match(directPath, /exact title and a real link are both valid locators/);
+  assert.match(directPath, /exact title uniquely locates[\s\S]*do NOT demand a link/);
+  assert.match(directPath, /not whether it originally created the task/);
+  assert.match(directPath, /does NOT require original assistant dispatch text, sender token records, creation acknowledgement or a sender\/receiver native-handle match/);
+  assert.match(directPath, /Do not loop back to path 2's original-chain requirements/);
+  assert.match(directPath, /delegated\/model-generated instruction is not an actual human confirmation/);
+  assert.match(directPath, /locator alone[\s\S]*without granting send permission/);
+  assert.match(directPath, /identity is still ambiguous, ask only for the unresolved distinction/);
+});
+
+test('static content-read fallback checks existing evidence and browser capability before a focused human confirmation', () => {
   assert.match(receiverReturn, /chatgpt-content-reference[\s\S]*NOT the referenced assistant body; hasMore=false does not prove body coverage/);
-  assert.match(receiverReturn, /available supported full-content reader[\s\S]*SAME candidate scope/);
-  assert.match(receiverReturn, /never infer content from a reference ID, fabricate a link, call private endpoints or expand the search/);
-  assert.match(receiverReturn, /report exactly which original request\/dispatch\/creation record cannot be read/);
+  assert.match(contentRead, /First decide whether other observed evidence already suffices/);
+  assert.match(contentRead, /available supported full-content reader[\s\S]*SAME candidate scope/);
+  assert.match(contentRead, /browser not already showing the candidate is not proof of unavailable browser capability/);
+  assert.match(contentRead, /enter the observed exact candidate through a supported interface/);
+  assert.match(contentRead, /Never infer content from a reference ID, fabricate a link, call private endpoints or expand the search/);
+  assert.match(contentRead, /Unreadable assistant content does not automatically require a source link/);
+  assert.match(contentRead, /do not request a locator already known merely because the body is unreadable/);
+  assert.match(contentRead, /Apply the human's answer under path 3/);
   assert.match(receiverReturn, /ONE limit:20 listing[\s\S]*FIRST 10 pinned entries/);
   assert.match(receiverReturn, /If ambiguity remains[\s\S]*wait/);
+  assert.match(receiverReturn, /Never send a test message to a candidate/);
 });
 
 test('static return contract reuses verified standing human permission without extending engineering authority', () => {
   assert.match(receiverReturn, /readable original human standing authorization[\s\S]*SAME verified origin[\s\S]*not been revoked or narrowed[\s\S]*send-tool contract admits that evidence/);
   assert.match(receiverReturn, /Do not demand that it name future tokens\/job IDs/);
-  assert.match(receiverReturn, /Verify source identity separately for every dispatch/);
+  assert.match(receiverReturn, /Verify the applicable destination separately for every dispatch/);
+  assert.match(receiverReturn, /Standing origin-specific permission does not transfer to another recipient merely because that recipient was identified/);
   assert.match(receiverReturn, /Unreadable authorization is authorization_unverified; absent applicable authorization is authorization_required/);
   assert.match(receiverReturn, /stricter actual tool contract remains binding/);
   assert.match(receiverReturn, /Return authorization grants no code, production or Git publication authority/);
@@ -163,7 +197,8 @@ test('static return contract reuses verified standing human permission without e
 });
 
 test('static result contract distinguishes source-read failures from permission failures without new protocol fields', () => {
-  assert.match(skill, /Distinguish unreadable dispatch\/creation bodies, native-handle mismatch and multiple candidates from authorization gaps/);
+  assert.match(skill, /Distinguish insufficient readable evidence, task conflicts and multiple candidates from authorization gaps/);
+  assert.match(skill, /Record the successful path and actual supporting observations in RETURN_ROUTE_EVIDENCE/);
   assert.match(skill, /These assistant messages are dispatch evidence, not human authorization or a registry/);
   assert.equal(skeleton.match(/^Bound conversation ID: unavailable$/gm).length, 1);
   assert.match(skill, /Do not add HACT state, receipts, registries\/caches[\s\S]*watchers, schedulers/);

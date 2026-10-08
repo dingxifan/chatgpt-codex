@@ -2,11 +2,11 @@
 
 让 ChatGPT 使用 codex-dispatch Skill，把任务交给使用者自己电脑上的 Codex 桌面应用。Bridge 只有 artifact_put、codex_start、codex_get 三个工具；派发成功后不自动查询任务。
 
-codex_start 先执行硬 LINT：缺少 Goal、误用 Bridge 技术父会话 ID、任务信息不一致或回传模式不明时，返回 DISPATCH_LINT_FAILED，不创建任务。当前 Skill v0.1.18 要求接收端核对实际权限上下文，并保留一致的 Dispatch token UUID 和 unavailable 标题支持，不要求自动取得项目／标题。查找限最近 20 条未置顶记录和置顶顺序前 10 条；安全方法不能确定窗口时接收端主动问人类并等待。旧真实标题信封兼容。校验器不证明来源或实际回传成功；接收端仍核验真实证据。
+codex_start 先执行硬 LINT：缺少 Goal、误用 Bridge 技术父会话 ID、任务信息不一致或回传模式不明时，返回 DISPATCH_LINT_FAILED，不创建任务。当前 Skill v0.1.19 要求接收端核对实际权限上下文，并保留一致的 Dispatch token UUID 和 unavailable 标题支持，不要求自动取得项目／标题。查找限最近 20 条未置顶记录和置顶顺序前 10 条；安全方法不能确定窗口时接收端主动问人类并等待。旧真实标题信封兼容。校验器不证明来源或实际回传成功；接收端仍核验真实证据。
 
 中央表可在选定路由中提供 Publish targets（地址与目标分支）和 Publish order（PR／合并／同步顺序），Skill 原样带入交接。两项均未填写时，仅对本次要求发布的任务使用工作区 Git 全同步兜底；有错误、冲突或中央读取失败不得视为未填。发布范围不授予 push／merge／部署权限，逐目标核验真实远端引用后才可报告全同步；不使用 mirror 或自动 force。格式见 [中央表契约](config/CODEX_WORKSPACE_ROUTING.md)。
 
-v0.1.18 明确人类请求、助手派发记录和创建确认可分消息联合核验，不要求用户提前提供 token/job_id。助手引用占位符不等于正文；可读长期授权按实际发送工具合同复用。当前 Desktop 正文读取缺口及真实闭环待验收项见 [来源回传核查](docs/RETURN-ORIGIN-VERIFICATION.md)。
+v0.1.19 明确原生绑定、自动核验、用户直接指定目标是独立替代路径；原始完整派发链是强证据，不是所有路径的累计门槛。准确标题可唯一定位时不索要链接，人类直接确认后不循环索取原派发全文。助手引用不等于正文，长期许可仍按实际发送工具合同核验。历史事故和新版验收案例见 [来源回传核查](docs/RETURN-ORIGIN-VERIFICATION.md)。
 
 ## 交给另一台机器的 Codex
 
@@ -29,7 +29,7 @@ Desktop 当前唯一维护目录为 `E:\tools\codex-from-chatgpt`，对应 `ding
 | AGENTS.md | 安装端 Codex 的执行说明 |
 | INSTALL.md | 自动安装顺序与必须交互的步骤 |
 | bridge/ | 固定快照的原生桌面 Bridge 源码、锁文件、测试和原始 MIT 许可 |
-| plugin/codex-dispatch/ | 可导入账号的 Skill 插件；两个 manifest 当前均为 v0.1.18 |
+| plugin/codex-dispatch/ | 可导入账号的 Skill 插件；两个 manifest 当前均为 v0.1.19 |
 | scripts/Install.ps1 | 检查 Node、安装依赖、构建、本地 Skill 安装和配置生成 |
 | scripts/Start-Bridge.ps1 | 从当前 Codex 桌面上下文启动 Bridge |
 | scripts/Test-Bridge.mjs | 健康、就绪、新版探测降级、旧版初始化、工具集合和 artifact_put 验证 |
