@@ -83,3 +83,11 @@
 修复代码提交 `81a6ec0` 与历史能力说明提交 `bb24d0e` 已推送至 `codex/fix-return-origin-evidence`，创建 [draft PR #9](https://github.com/dingxifan/chatgpt-codex/pull/9) 并附到本聊天。实际远端分支 SHA 与本地一致；本节随后作为交付记录提交。当前中央表规定 draft PR 后的合并另需人类授权，尚未合并 main，不把任务分支推送称为 main 已同步。
 
 没有改动 Bridge 源码，故本次 Skill 更新不需要重启服务或改工具元数据。本轮额外只读定义检查连接 `127.0.0.1:8787` 返回 ECONNREFUSED；维护配置指定 18787，进一步本机监听检查未见 8787／18787 监听，也未观察到已知 Bridge entry 的 Node 进程。这只描述当前维护机器检查结果，不证明 Laptop Bridge 不可用，不猜测或切换服务。未重启、部署或更改 Tunnel／权限。账号源码发布已验证；新会话实际加载、Laptop 正文读取能力及无人确认 E2E 仍 pending，未新派发或发送测试消息。
+
+## 获准恢复 Bridge／Tunnel 后的核验（2026-10-08）
+
+用户明确要求重启 Bridge 和 Tunnel 并推送 GitHub。核查时 8787／18787 均未监听，既有 Tunnel alias `codex-bridge` 为 stopped，未终止其它进程。实际已部署的较新 Bridge 副本为 `runtime-desktop-dispatch-20261007-53f1d6d/bridge`，来源 `53f1d6dbd5aa381c14c28fae56f835b9e9aabdc3`、dirty=false，Build-Info 验证通过；它的 bridge/src 和 Build-Info 与修复分支无差异。本次恢复使用该副本的既有 start-bridge.ps1／start-environment.ps1，从当前有效 Desktop 上下文启动，而非维护目录的 18787 测试配置或较旧 d998c8c 副本。workspace allowlist、handoff、Tunnel alias／profile／ID、目标 8787/mcp 和安全文件凭据引用沿用原配置，没有复制历史 pipe/thread 或更改权限。
+
+Bridge 新 PID 为 9964，实际监听 127.0.0.1:8787，ready=true、desktop_connected=true。Tunnel status 确認 process_running=true、runtime_state=ready、healthy=true、ready=true、stale=false。Test-Bridge 的 definitions-only／compare-build 检查通过：仅 artifact_put、codex_start、codex_get，三者 matches_build=true；普通模式通过 discovery fallback、初始化、真实文本落盘和读取，LOCAL_READY 已验证。保留验证文件 `C:\Users\Administrator\.codex-agent-mcp\runtime-feasibility-20261001\handoff\installation-check-15cc027f-37f2-439b-a01e-4068fbf8900a.txt`。没有调用 codex_start 或 codex_get。
+
+账号 metadata 仍为 0.1.18／上述 release；本机插件缓存的两个 manifest 为 0.1.18，Skill SHA256 与源码一致。当前 Codex 会话提供的 Skill 路径也已切换到 0.1.18。此核验没有刷新或测试原 ChatGPT 会话的工具定义，没有在 Laptop 发起端到端任务，CHATGPT_CONNECTED 的当前实际定义及 END_TO_END_VERIFIED 仍 pending，不能把服务重启或缓存更新当作自动回传验收。GitHub 修复分支已同步，PR #9 仍待明确合并授权。
