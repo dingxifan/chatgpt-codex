@@ -7,8 +7,8 @@ import test from "node:test";
 import { configuredWorkspaceRoots, validateWorkspace } from "../src/workspaces.js";
 
 test("canonical workspace stays under the configured root", async () => {
-  const result = await validateWorkspace(process.cwd());
-  assert.equal(result, realpathSync(process.cwd()));
+  const result = await validateWorkspace(process.cwd(), process.cwd());
+  assert.equal(result, realpathSync.native(process.cwd()));
 });
 
 test("workspace traversal, outside path and invalid root are rejected", async () => {
@@ -28,8 +28,8 @@ test("multiple roots allow either subtree but reject siblings, parents and drive
   const projectB = path.join(second, "project-b");
   mkdirSync(projectA); mkdirSync(projectB);
   const roots = [first, second];
-  assert.equal(await validateWorkspace(projectA, roots), realpathSync(projectA));
-  assert.equal(await validateWorkspace(projectB, roots), realpathSync(projectB));
+  assert.equal(await validateWorkspace(projectA, roots), realpathSync.native(projectA));
+  assert.equal(await validateWorkspace(projectB, roots), realpathSync.native(projectB));
   await assert.rejects(validateWorkspace(sibling, roots), /configured allowed roots/);
   await assert.rejects(validateWorkspace(parent, roots), /configured allowed roots/);
   await assert.rejects(validateWorkspace(path.parse(parent).root, roots), /configured allowed roots/);
@@ -55,5 +55,5 @@ test("symlink escape is rejected after realpath", async () => {
   symlinkSync(outside, link, "dir");
   await assert.rejects(validateWorkspace(link, root), /dentro de/);
   mkdirSync(path.join(root, "valid"));
-  assert.equal(await validateWorkspace(path.join(root, "valid"), root), realpathSync(path.join(root, "valid")));
+  assert.equal(await validateWorkspace(path.join(root, "valid"), root), realpathSync.native(path.join(root, "valid")));
 });

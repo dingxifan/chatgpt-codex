@@ -113,7 +113,16 @@ export class DesktopCodex implements DispatchBackend {
     const snapshot = await this.call("wait_threads", { targets: [{ threadId: jobId, hostId: "local" }], timeoutMs: 0 });
     const poll = snapshot.polls?.[0];
     if (!poll) throw new Error(JSON.stringify(snapshot.errors ?? "No desktop task snapshot returned"));
-    const result: Record<string, unknown> = { job_id: jobId, status: poll.latestTurn?.status ?? poll.thread?.status?.type ?? "unknown" };
+    if (poll.thread?.id !== undefined && poll.thread.id !== jobId) throw new Error("Desktop snapshot returned a different thread identity.");
+    if (poll.thread?.hostId !== undefined && poll.thread.hostId !== "local") throw new Error("Desktop snapshot returned a different host.");
+    const threadStatus = typeof poll.thread?.status === "string" ? poll.thread.status : poll.thread?.status?.type ?? "unknown";
+    const result: Record<string, unknown> = {
+      job_id: jobId, status: threadStatus, thread_status: threadStatus,
+      last_turn_status: poll.latestTurn?.status ?? "unknown",
+      last_turn_time: poll.latestTurn?.updatedAt ?? poll.latestTurn?.completedAt ?? poll.latestTurn?.startedAt ?? null,
+      observed_at: new Date().toISOString(),
+      goal_status: "unknown",
+    };
     if (options.detail !== "compact" && poll.latestAssistantMessage?.text) result.final_message = poll.latestAssistantMessage.text;
     if (poll.latestTurn?.error) result.error = poll.latestTurn.error;
     if (options.detail === "debug") result.native_snapshot = poll;

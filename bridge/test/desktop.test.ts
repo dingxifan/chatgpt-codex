@@ -14,7 +14,7 @@ function fixture(failNavigation = false) {
     if (name === "list_projects") return { projects: [{ projectId: "local-project", projectKind: "local", hostId: "local", path: workspace }] };
     if (name === "create_thread") return { threadId: "native-thread" };
     if (name === "navigate_to_codex_page") { if (failNavigation) throw new Error("window unavailable"); return { navigated: true }; }
-    if (name === "wait_threads") return { polls: [{ latestTurn: { status: "completed" }, latestAssistantMessage: { text: "RESULT_SHA: fixed" } }] };
+    if (name === "wait_threads") return { polls: [{ thread: { status: { type: "active" } }, latestTurn: { status: "completed", completedAt: "2026-10-09T12:00:00Z" }, latestAssistantMessage: { text: "RESULT_SHA: fixed" } }] };
     throw new Error(`Unexpected native operation ${name}`);
   };
   return { root, workspace, calls, desktop: new DesktopCodex([root], 1000, call) };
@@ -53,7 +53,14 @@ test("navigation failure preserves the accepted task id and never creates a dupl
 
 test("explicit query reads one immediate native snapshot without waiting or polling", async () => {
   const { calls, desktop } = fixture();
-  assert.deepEqual(await desktop.get("native-thread"), { job_id: "native-thread", status: "completed", final_message: "RESULT_SHA: fixed" });
+  const result = await desktop.get("native-thread");
+  assert.equal(result.thread_status, "active");
+  assert.equal(result.status, "active");
+  assert.equal(result.last_turn_status, "completed");
+  assert.equal(result.last_turn_time, "2026-10-09T12:00:00Z");
+  assert.equal(result.goal_status, "unknown");
+  assert.equal(result.final_message, "RESULT_SHA: fixed");
+  assert.equal(typeof result.observed_at, "string");
   assert.deepEqual(calls, [{ name: "wait_threads", args: { targets: [{threadId:"native-thread",hostId:"local"}],timeoutMs:0 } }]);
 });
 
@@ -62,6 +69,16 @@ test("missing desktop context fails closed, without starting an execution server
   delete process.env.CODEX_APP_TOOLS_SERVER;
   try { await assert.rejects(new DesktopCodex([], 1000).initialize(), /Launch Bridge from Codex desktop/); }
   finally { if (original !== undefined) process.env.CODEX_APP_TOOLS_SERVER = original; }
+});
+
+test("explicit snapshot identity mismatch is rejected instead of reporting another window", async () => {
+  for (const thread of [{ id: "other-job", hostId: "local" }, { id: "requested-job", hostId: "other-host" }]) {
+    const desktop = new DesktopCodex([], 1000, async name => {
+      assert.equal(name, "wait_threads");
+      return { polls: [{ thread, latestTurn: { status: "completed" } }] };
+    });
+    await assert.rejects(desktop.get("requested-job"), /different (thread identity|host)/);
+  }
 });
 
 test("every dispatch refreshes desktop projects, including after a rejected lookup", async () => {

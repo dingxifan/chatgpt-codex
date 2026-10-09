@@ -1,5 +1,7 @@
 # 固定来源与许可
 
+本地未发布候选：增加单文件读取／Goal 生成和同 Bridge 创建回执，更新原 Skill。实际代码、接口和未验收项见 [单文件交接](docs/SINGLE-FILE-HANDOFF.md)；以下已发布版本来源事实保留，插件身份不变。
+
 唯一维护和发布仓库：`dingxifan/chatgpt-codex`（https://github.com/dingxifan/chatgpt-codex.git）。`joseanu/codex-from-chatgpt` 仅为下述 Bridge 上游源码来源，不是本项目部署仓库。
 
 v0.1.14 的运行时路由唯一权威源为本仓库 `main/config/CODEX_WORKSPACE_ROUTING.md`，固定 URL 为 https://raw.githubusercontent.com/dingxifan/chatgpt-codex/main/config/CODEX_WORKSPACE_ROUTING.md 。每次新派发重新读取；忽略 Project / Space 副本，失败即停止，不新增 parser、服务、缓存或 Bridge API。

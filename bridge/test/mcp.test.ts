@@ -1,210 +1,115 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, symlinkSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { link, realpath, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-
 import { ArtifactStore } from "../src/artifacts.js";
 import { DesktopCodex, NativeCallNotSubmittedError, parseNativeResult, type DispatchBackend } from "../src/desktop.js";
 import { createMcpServer } from "../src/mcp.js";
+import { ReceiptStore } from "../src/receipts.js";
+import { InstructionStore } from "../src/instruction.js";
+import { fixture, instructionText, TOKEN } from "./instruction-fixture.js";
 
-const validHandoff = `MANDATORY GOAL ACTIVATION
-Activate the Goal before substantive work.
-/goal Verify the fixture and deliver the result to FINAL RETURN TARGET using RETURN ROUTING.
-
-EXECUTION BRIEF
-Task identity: fixture-001
-Repository / workspace: example/project / /allowed/project
-BASE_SHA: ${"a".repeat(40)}
-Artifacts: none
-
-FINAL RETURN TARGET
-Conversation kind: ChatGPT
-Conversation title: Fixture origin chat
-Bound conversation ID: unavailable
-Task identity: fixture-001
-Repository / workspace: example/project / /allowed/project
-BASE_SHA: ${"a".repeat(40)}
-
-RETURN ROUTING
-Return mode: auto
-Verify the origin; never substitute the technical parent.
-`;
-
-test("MCP exposes only dispatch, text drop and explicit query", async () => {
-  const root = mkdtempSync(path.join(tmpdir(), "codex-mcp-artifacts-"));
-  let managerAccessed = false;
-  const manager = new Proxy({}, {
-    get() {
-      managerAccessed = true;
-      throw new Error("artifact_put must not access JobManager");
-    },
-  }) as DispatchBackend;
-  const server = createMcpServer(manager, new ArtifactStore(root));
-  const client = new Client({ name: "artifact-test", version: "1.0.0" });
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-
-  await server.connect(serverTransport);
-  await client.connect(clientTransport);
-  try {
-    const listed = await client.listTools();
-    assert.deepEqual(listed.tools.map((tool) => tool.name), [
-      "artifact_put",
-      "codex_start",
-      "codex_get",
-    ]);
-
-    const schemas = Object.fromEntries(listed.tools.map((tool) => [tool.name, tool.inputSchema]));
-    const descriptions = Object.fromEntries(listed.tools.map((tool) => [tool.name, tool.description ?? ""]));
-    assert.match(descriptions.codex_start!, /successful dispatch completes the normal Bridge action/);
-    assert.match(descriptions.codex_start!, /Do not poll codex_get automatically or proactively/);
-    assert.match(descriptions.codex_get!, /only when the user explicitly asks/);
-    const propertyNames = (name: string): string[] => Object.keys(schemas[name]?.properties ?? {});
-    assert.deepEqual(propertyNames("codex_start"), ["workspace", "prompt"]);
-    assert.deepEqual(propertyNames("codex_get"), ["job_id", "detail"]);
-    assert.deepEqual(schemas.codex_start?.required, ["workspace", "prompt"]);
-    assert.deepEqual(schemas.codex_get?.required, ["job_id"]);
-    assert.equal(client.getServerCapabilities()?.resources, undefined);
-    for (const removed of ["codex_continue", "codex_interrupt", "codex_respond_approval", "wake_probe", "codex_wake_wait"]) {
-      const rejected = await client.callTool({ name: removed, arguments: {} });
-      assert.equal(rejected.isError, true, `${removed} must not remain callable`);
-    }
-
-    const result = await client.callTool({
-      name: "artifact_put",
-      arguments: { filename: "through-mcp.md", content: "# Through MCP\n" },
-    });
-    assert.equal("isError" in result ? result.isError : undefined, undefined);
-    assert.equal("structuredContent" in result ? result.structuredContent?.filename : undefined, "through-mcp.md");
-    assert.equal(readFileSync(path.join(root, "through-mcp.md"), "utf8"), "# Through MCP\n");
-    assert.equal(managerAccessed, false);
-  } finally {
-    await client.close();
-    await server.close();
-  }
-});
-
-for (const mode of ["auto", "manual"] as const) for (const shape of ["legacy", "project"] as const) test(`valid ${mode} ${shape} dispatch acknowledges once without waiting or reading results`, async () => {
-  const root = mkdtempSync(path.join(tmpdir(), "codex-mcp-dispatch-"));
-  const workspace = path.join(root, "project"); mkdirSync(workspace);
-  const actualHandoff = validHandoff.replaceAll("/allowed/project", workspace);
-  const handoff = shape === "legacy" ? actualHandoff : actualHandoff
-    .replaceAll("Task identity: fixture-001", "Task identity: fixture-001\nDispatch token: b3f29391-ef2c-46ed-912f-1c24d981a4d3")
-    .replace("Conversation title: Fixture origin chat", "Conversation title: unavailable");
-  const prompt = handoff.replace("Return mode: auto", `Return mode: ${mode}`).replaceAll("\n", "\r\n") + "补充说明：保留原始文本。\r\n";
-  const calls: string[] = [];
-  const manager = {
-    async start(workspace: string, received: string) {
-      calls.push("start");
-      assert.equal(workspace, path.join(root, "project"));
-      assert.equal(received, prompt);
-      return { job_id: "diagnostic-id", thread_id: "internal-thread", turn_id: "internal-turn", status: "running", revision: 1 };
-    },
-    get() { calls.push("get"); throw new Error("dispatch must not read results"); },
-  } as unknown as DispatchBackend;
-  const server = createMcpServer(manager, new ArtifactStore(root));
-  const client = new Client({ name: "dispatch-test", version: "1.0" });
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-  await server.connect(serverTransport);
-  await client.connect(clientTransport);
-  try {
-    const result = await client.callTool({ name: "codex_start", arguments: { workspace, prompt } });
-    assert.deepEqual(result.structuredContent, { creation_status: "created", job_id: "diagnostic-id" });
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    assert.deepEqual(calls, ["start"]);
-  } finally { await client.close(); await server.close(); }
-});
-
-test("LINT rejection creates no task, returns all findings and no job ID", async () => {
-  const root = mkdtempSync(path.join(tmpdir(), "codex-mcp-lint-"));
-  let calls = 0;
-  const manager = { start() { calls++; throw new Error("invalid handoff must never reach backend"); }, get() { calls++; throw new Error("LINT must not query jobs"); } } as unknown as DispatchBackend;
-  const server = createMcpServer(manager, new ArtifactStore(root));
-  const client = new Client({ name: "lint-test", version: "1.0" });
+async function connection(manager: DispatchBackend, artifacts: ArtifactStore, roots: string[], receipts?: ReceiptStore) {
+  const server = createMcpServer(manager, artifacts, { workspaceRoots: roots, receipts });
+  const client = new Client({ name: "file-handoff-test", version: "1.0" });
   const [a, b] = InMemoryTransport.createLinkedPair();
-  await server.connect(b);
-  await client.connect(a);
-  const previousCaller = process.env.CODEX_THREAD_ID;
-  process.env.CODEX_THREAD_ID = "caller-codex-id";
+  await server.connect(b); await client.connect(a);
+  return { client, close: async () => { await client.close(); await server.close(); } };
+}
+const noAccess = () => new Proxy({}, { get() { throw new Error("No native backend access permitted"); } }) as DispatchBackend;
+
+test("only three tools; creation is file-only, query supports one Job or token, artifact does not touch backend", async () => {
+  const f = await fixture();
+  const c = await connection(noAccess(), f.artifacts, [f.root]);
   try {
-    for (const prompt of [
-      "/goal Retire the feature and return its immutable result to the parent window.\nTASK\nPreserve historical evidence.",
-      validHandoff.replace("Bound conversation ID: unavailable", "Bound conversation ID: caller-codex-id"),
-      validHandoff.replace("Fixture origin chat", "unavailable"),
-      validHandoff.replaceAll("Task identity: fixture-001", "Task identity: fixture-001\nDispatch token: b3f29391-ef2c-46ed-912f-1c24d981a4d3")
-        .replace("Conversation title: Fixture origin chat", "Conversation title: unavailable")
-        .replace("b3f29391-ef2c-46ed-912f-1c24d981a4d3", "b3f29391-ef2c-46ed-912f-1c24d981a4d4"),
+    const { tools } = await c.client.listTools();
+    assert.deepEqual(tools.map(t => t.name), ["artifact_put", "codex_start", "codex_get"]);
+    const start = tools.find(t => t.name === "codex_start")!;
+    const get = tools.find(t => t.name === "codex_get")!;
+    assert.deepEqual(Object.keys(start.inputSchema.properties!), ["instruction_file", "expected_sha256", "dispatch_token"]);
+    assert.deepEqual(start.inputSchema.required, ["instruction_file", "expected_sha256", "dispatch_token"]);
+    assert.deepEqual(Object.keys(get.inputSchema.properties!), ["job_id", "dispatch_token", "detail"]);
+    assert.match(start.description!, /Do not poll codex_get automatically or proactively/);
+    assert.match(get.description!, /only when the user explicitly asks/);
+    assert.equal(c.client.getServerCapabilities()?.resources, undefined);
+    for (const removed of ["codex_continue", "codex_interrupt", "codex_respond_approval", "wake_probe", "codex_wake_wait"]) {
+      assert.equal((await c.client.callTool({ name: removed, arguments: {} })).isError, true);
+    }
+    const result = await c.client.callTool({ name: "artifact_put", arguments: { filename: "through-mcp.md", content: "# Entire text\n" } });
+    assert.equal(result.isError, undefined);
+    assert.equal(readFileSync(path.join(f.root, "through-mcp.md"), "utf8"), "# Entire text\n");
+    assert.equal((await c.client.callTool({ name: "codex_start", arguments: { workspace: f.workspace, prompt: "legacy" } })).isError, true);
+    assert.equal((await c.client.callTool({ name: "codex_start", arguments: { ...f.input, prompt: "second business instruction" } })).isError, true);
+    assert.equal((await c.client.callTool({ name: "codex_get", arguments: { job_id: "job", since_revision: 1 } })).isError, true);
+  } finally { await c.close(); }
+});
+
+for (const mode of ["auto", "manual"] as const) test(`${mode} file creates once, transports derived Goal and complete file locators, persists actual Job`, async () => {
+  const f = await fixture(mode);
+  const expected = await new InstructionStore(f.artifacts, [f.root]).load(f.input);
+  const calls: string[] = [];
+  const manager: DispatchBackend = {
+    async start(workspace, prompt) { calls.push("start"); assert.equal(workspace, f.workspace); assert.equal(prompt, expected.prompt); return { job_id: "actual-job" }; },
+    get() { throw new Error("No automatic query"); },
+  };
+  const c = await connection(manager, f.artifacts, [f.root]);
+  try {
+    const result = await c.client.callTool({ name: "codex_start", arguments: f.input });
+    assert.equal(result.isError, undefined);
+    assert.equal(result.structuredContent?.creation_status, "created");
+    assert.equal(result.structuredContent?.job_id, "actual-job");
+    assert.equal(result.structuredContent?.receipt_saved, true);
+    const receipt = await new ReceiptStore(f.artifacts).get(TOKEN);
+    assert.equal(receipt?.value.job_id, "actual-job");
+    assert.equal(receipt?.value.instruction_sha256, f.file.sha256);
+    assert.equal(receipt?.value.origin.verification, "unverified_at_bridge");
+    assert.equal(readFileSync(f.file.path, "utf8"), instructionText(f.metadata));
+    assert.deepEqual(calls, ["start"]);
+  } finally { await c.close(); }
+});
+
+test("invalid file/hash/token/workspace/metadata/Goal never invokes backend", async () => {
+  const f = await fixture();
+  const c = await connection(noAccess(), f.artifacts, [f.root]);
+  try {
+    for (const input of [
+      { ...f.input, instruction_file: path.join(f.root, "missing.md") },
+      { ...f.input, instruction_file: f.root + path.sep + ".." + path.sep + "missing.md" },
+      { ...f.input, expected_sha256: "0".repeat(64) },
+      { ...f.input, dispatch_token: "b3f29391-ef2c-46ed-912f-1c24d981a4d4" },
     ]) {
-      const result = await client.callTool({ name: "codex_start", arguments: { workspace: "/allowed/project", prompt } });
+      const result = await c.client.callTool({ name: "codex_start", arguments: input });
       assert.equal(result.isError, true);
-      assert.equal(result.structuredContent?.status, "failed");
       assert.equal(result.structuredContent?.creation_status, "not_created");
-      assert.equal(result.structuredContent?.error_code, "DISPATCH_LINT_FAILED");
-      assert(Array.isArray(result.structuredContent?.errors));
-      if (prompt.startsWith("/goal")) assert((result.structuredContent!.errors as unknown[]).length > 1);
+      assert.equal(result.structuredContent?.error_code, "DISPATCH_INSTRUCTION_INVALID");
       assert.equal("job_id" in result.structuredContent!, false);
     }
-    assert.equal(calls, 0);
-  } finally {
-    if (previousCaller === undefined) delete process.env.CODEX_THREAD_ID;
-    else process.env.CODEX_THREAD_ID = previousCaller;
-    await client.close(); await server.close();
-  }
+    for (const change of [
+      (m: typeof f.metadata) => { m.workspace = tmpdir(); },
+      (m: typeof f.metadata) => { m.goal_core = "x".repeat(4000); },
+      (m: typeof f.metadata) => { m.task_identity = "<actual-task>"; },
+    ]) {
+      const bad = await fixture("auto", change);
+      const cc = await connection(noAccess(), bad.artifacts, [bad.root]);
+      try { assert.equal((await cc.client.callTool({ name: "codex_start", arguments: bad.input })).structuredContent?.creation_status, "not_created"); }
+      finally { await cc.close(); }
+    }
+  } finally { await c.close(); }
 });
 
-test("MCP artifact cleanup failure has an explicit error shape and no false success", async () => {
-  const root = mkdtempSync(path.join(tmpdir(), "codex-mcp-artifact-failure-"));
-  let forcedFailure = false;
-  const artifacts = new ArtifactStore(root, undefined, {
-    link,
-    async unlink(filePath) {
-      if (!forcedFailure && filePath.endsWith(".tmp")) {
-        forcedFailure = true;
-        const error = new Error("forced MCP temp unlink failure") as NodeJS.ErrnoException;
-        error.code = "EACCES";
-        throw error;
-      }
-      await unlink(filePath);
-    },
-  });
-  const manager = new Proxy({}, { get() { throw new Error("artifact_put must not access dispatch backend"); } }) as DispatchBackend;
-  const server = createMcpServer(manager, artifacts);
-  const client = new Client({ name: "artifact-failure-test", version: "1.0.0" });
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-
-  await server.connect(serverTransport);
-  await client.connect(clientTransport);
-  try {
-    const result = await client.callTool({
-      name: "artifact_put",
-      arguments: { filename: "cleanup-failure.md", content: "body" },
-    });
-    assert.equal("isError" in result ? result.isError : undefined, true);
-    const structured = "structuredContent" in result ? result.structuredContent : undefined;
-    assert.equal(structured?.status, "failed");
-    assert.match(String(structured?.error), /Rollback attempted; possible residual paths: none/);
-    assert.deepEqual(readdirSync(root), []);
-  } finally {
-    await client.close();
-    await server.close();
-  }
-});
-
-for (const fault of ["workspace-mismatch", "zero-projects", "ambiguous-projects", "lookup-disconnect", "not-submitted", "create-timeout", "create-disconnect", "invalid-json", "native-error", "missing-id", "pending-id", "conflicting-id", "navigate-disconnect", "none"] as const) test(`MCP/Desktop integration classifies ${fault} without duplicate creation or status queries`, async () => {
-  const root = mkdtempSync(path.join(tmpdir(), "codex-dispatch-outcome-"));
-  const workspace = path.join(root, "project"); mkdirSync(workspace);
-  const other = path.join(root, "other"); mkdirSync(other);
+for (const fault of ["zero-projects", "ambiguous-projects", "lookup-disconnect", "not-submitted", "create-timeout", "create-disconnect", "invalid-json", "native-error", "missing-id", "pending-id", "conflicting-id", "navigate-disconnect", "none"] as const) test(`MCP/Desktop classifies ${fault} without retry or automatic query`, async () => {
+  const f = await fixture();
   const calls: string[] = [];
-  const desktop = new DesktopCodex([root], 1000, async name => {
+  const desktop = new DesktopCodex([f.root], 1000, async name => {
     calls.push(name);
     if (name === "list_projects") {
       if (fault === "lookup-disconnect") throw new Error("lookup disconnected");
-      const project = { projectId: "p", projectKind: "local", hostId: "local", path: workspace };
-      return { projects: fault === "zero-projects" ? [] : fault === "ambiguous-projects" ? [project, { ...project, projectId: "p2", path: workspace + path.sep }] : [project] };
+      const project = { projectId: "p", projectKind: "local", hostId: "local", path: f.workspace };
+      return { projects: fault === "zero-projects" ? [] : fault === "ambiguous-projects" ? [project, { ...project, projectId: "p2", path: f.workspace + path.sep }] : [project] };
     }
     if (name === "create_thread") {
       if (fault === "not-submitted") throw new NativeCallNotSubmittedError("disconnected before send");
@@ -215,19 +120,12 @@ for (const fault of ["workspace-mismatch", "zero-projects", "ambiguous-projects"
       if (fault === "conflicting-id") return parseNativeResult(name, { structuredContent: { threadId: "structured-id" }, content: [{ type: "text", text: '{"threadId":"different-id"}' }] });
       return { threadId: "confirmed-native-task" };
     }
-    if (name === "navigate_to_codex_page") {
-      if (fault === "navigate-disconnect") throw new Error("navigation disconnected");
-      return {};
-    }
-    throw new Error("Unexpected query or retry");
+    if (name === "navigate_to_codex_page") { if (fault === "navigate-disconnect") throw new Error("navigation disconnected"); return {}; }
+    throw new Error("Unexpected native query or retry");
   });
-  const server = createMcpServer(desktop, new ArtifactStore(root));
-  const client = new Client({ name: "dispatch-outcome-test", version: "1.0" });
-  const [a, b] = InMemoryTransport.createLinkedPair();
-  await server.connect(b); await client.connect(a);
+  const c = await connection(desktop, f.artifacts, [f.root]);
   try {
-    const prompt = validHandoff.replaceAll("/allowed/project", fault === "workspace-mismatch" ? other : workspace);
-    const result = await client.callTool({ name: "codex_start", arguments: { workspace, prompt } });
+    const result = await c.client.callTool({ name: "codex_start", arguments: f.input });
     const data = result.structuredContent!;
     if (fault === "none" || fault === "navigate-disconnect") {
       assert.equal(result.isError, undefined);
@@ -236,61 +134,205 @@ for (const fault of ["workspace-mismatch", "zero-projects", "ambiguous-projects"
       if (fault === "navigate-disconnect") assert.match(String(data.warning), /do not redispatch/);
       assert.deepEqual(calls, ["list_projects", "create_thread", "navigate_to_codex_page"]);
     } else {
-      const beforeSend = ["workspace-mismatch", "zero-projects", "ambiguous-projects", "lookup-disconnect", "not-submitted"].includes(fault);
+      const beforeSend = ["zero-projects", "ambiguous-projects", "lookup-disconnect", "not-submitted"].includes(fault);
       assert.equal(result.isError, true);
       assert.equal(data.creation_status, beforeSend ? "not_created" : "unknown");
-      assert.equal(data.status, beforeSend ? "failed" : "unknown");
-      assert.equal(data.error_code, fault === "workspace-mismatch" ? "DISPATCH_LINT_FAILED" : beforeSend ? "DISPATCH_REJECTED" : "DISPATCH_OUTCOME_UNKNOWN");
+      assert.equal(data.error_code, beforeSend ? "DISPATCH_REJECTED" : "DISPATCH_OUTCOME_UNKNOWN");
       assert.equal("job_id" in data, false);
-      if (fault === "workspace-mismatch") {
-        assert.deepEqual(calls, []);
-        assert.equal((data.errors as unknown[]).length, 2);
-      } else assert.deepEqual(calls, beforeSend && fault !== "not-submitted" ? ["list_projects"] : ["list_projects", "create_thread"]);
-      if (!beforeSend) assert.match(String(data.error), /Do not redispatch automatically/);
+      assert.deepEqual(calls, beforeSend && fault !== "not-submitted" ? ["list_projects"] : ["list_projects", "create_thread"]);
+      const receipt = await new ReceiptStore(f.artifacts).get(TOKEN);
+      assert.equal(receipt?.value.creation_status, data.creation_status);
+      // A reserved/unknown token cannot resubmit, including through another MCP session.
+      const second = await c.client.callTool({ name: "codex_start", arguments: f.input });
+      assert.equal(second.structuredContent?.error_code, "DISPATCH_RECEIPT_CONFLICT");
+      assert.equal(calls.filter(n => n === "create_thread").length, beforeSend && fault !== "not-submitted" ? 0 : 1);
     }
-  } finally { await client.close(); await server.close(); }
+  } finally { await c.close(); }
 });
 
-test("MCP passes the checked canonical workspace while preserving the caller prompt", async () => {
-  const root = mkdtempSync(path.join(tmpdir(), "codex-canonical-handoff-"));
-  const actual = path.join(root, "project"); mkdirSync(actual);
-  const alias = path.join(root, "alias"); symlinkSync(actual, alias, process.platform === "win32" ? "junction" : "dir");
-  const prompt = validHandoff.replaceAll("/allowed/project", alias);
-  const canonical = await realpath(actual);
+test("concurrent sessions with the same token submit exactly once; conflict preserves known Job", async () => {
+  const f = await fixture();
   let starts = 0;
-  const manager: DispatchBackend = {
-    async start(workspace, received) { starts++; assert.equal(workspace, canonical); assert.equal(received, prompt); return { job_id: "confirmed" }; },
-    get() { throw new Error("dispatch must not query"); },
-  };
-  const server = createMcpServer(manager, new ArtifactStore(root));
-  const client = new Client({ name: "canonical-handoff-test", version: "1.0" });
-  const [a, b] = InMemoryTransport.createLinkedPair();
-  await server.connect(b); await client.connect(a);
+  const manager: DispatchBackend = { async start() { starts++; return { job_id: "one-job" }; }, get() { throw new Error("No poll"); } };
+  const a = await connection(manager, f.artifacts, [f.root]);
+  const b = await connection(manager, f.artifacts, [f.root]);
   try {
-    const result = await client.callTool({ name: "codex_start", arguments: { workspace: alias, prompt } });
-    assert.deepEqual(result.structuredContent, { creation_status: "created", job_id: "confirmed" });
+    const results = await Promise.all([a.client.callTool({ name: "codex_start", arguments: f.input }), b.client.callTool({ name: "codex_start", arguments: f.input })]);
     assert.equal(starts, 1);
-  } finally { await client.close(); await server.close(); }
+    assert.equal(results.filter(r => r.structuredContent?.error_code === "DISPATCH_RECEIPT_CONFLICT").length, 1);
+    const duplicate = await b.client.callTool({ name: "codex_start", arguments: f.input });
+    assert.equal(duplicate.structuredContent?.job_id, "one-job");
+    assert.equal(duplicate.structuredContent?.attempt_submitted, false);
+    const changed = await f.artifacts.put({ filename: "changed.md", content: instructionText({ ...f.metadata, task_identity: "other-task" }) });
+    assert.equal((await b.client.callTool({ name: "codex_start", arguments: { ...f.input, instruction_file: changed.path, expected_sha256: changed.sha256 } })).structuredContent?.error_code, "DISPATCH_RECEIPT_CONFLICT");
+    assert.equal(starts, 1);
+  } finally { await a.close(); await b.close(); }
 });
 
-test("unclassified backend error remains unknown even when diagnostic text claims no creation", async () => {
-  const root = mkdtempSync(path.join(tmpdir(), "codex-opaque-error-"));
+test("receipt save failure preserves created and actual Job; reservation prevents resubmit", async () => {
+  const f = await fixture();
+  const receipts = new ReceiptStore(f.artifacts, { async rename() { throw new Error("forced receipt save failure"); } });
+  let starts = 0;
+  const manager: DispatchBackend = { async start() { starts++; return { job_id: "known-created-job" }; }, get() { throw new Error("No poll"); } };
+  const c = await connection(manager, f.artifacts, [f.root], receipts);
+  try {
+    const result = await c.client.callTool({ name: "codex_start", arguments: f.input });
+    assert.equal(result.isError, undefined);
+    assert.equal(result.structuredContent?.creation_status, "created");
+    assert.equal(result.structuredContent?.job_id, "known-created-job");
+    assert.equal(result.structuredContent?.receipt_saved, false);
+    assert.match(String(result.structuredContent?.receipt_error), /forced/);
+    assert.equal((await receipts.get(TOKEN))?.value.creation_status, "unknown");
+    assert.equal((await c.client.callTool({ name: "codex_start", arguments: f.input })).structuredContent?.attempt_submitted, false);
+    assert.equal(starts, 1);
+  } finally { await c.close(); }
+});
+
+test("alias workspace resolves physically but file metadata remains unchanged", async () => {
+  const f = await fixture();
+  const alias = path.join(f.root, "alias");
+  symlinkSync(f.workspace, alias, process.platform === "win32" ? "junction" : "dir");
+  const file = await f.artifacts.put({ filename: "alias-instruction.md", content: instructionText({ ...f.metadata, workspace: alias }) });
   let starts = 0;
   const manager: DispatchBackend = {
-    async start() { starts++; throw new Error("no task created"); },
-    get() { throw new Error("unknown outcome must not query automatically"); },
+    async start(workspace, prompt) { starts++; assert.equal(workspace, await realpath(f.workspace)); assert(JSON.parse(prompt.split("\n")[3]!).includes(alias)); return { job_id: "canonical-job" }; },
+    get() { throw new Error("No poll"); },
   };
-  const server = createMcpServer(manager, new ArtifactStore(root));
-  const client = new Client({ name: "opaque-error-test", version: "1.0" });
-  const [a, b] = InMemoryTransport.createLinkedPair();
-  await server.connect(b); await client.connect(a);
+  const c = await connection(manager, f.artifacts, [f.root]);
+  try { assert.equal((await c.client.callTool({ name: "codex_start", arguments: { ...f.input, instruction_file: file.path, expected_sha256: file.sha256 } })).structuredContent?.job_id, "canonical-job"); assert.equal(starts, 1); }
+  finally { await c.close(); }
+});
+
+test("query XOR rejects invalid selectors without native access", async () => {
+  const f = await fixture();
+  const c = await connection(noAccess(), f.artifacts, [f.root]);
   try {
-    const result = await client.callTool({ name: "codex_start", arguments: { workspace: root, prompt: validHandoff.replaceAll("/allowed/project", root) } });
-    assert.equal(result.isError, true);
-    assert.equal(result.structuredContent?.creation_status, "unknown");
-    assert.equal(result.structuredContent?.error_code, "DISPATCH_OUTCOME_UNKNOWN");
-    assert.match(String(result.structuredContent?.error), /^Creation outcome is unknown/);
-    assert.equal("job_id" in result.structuredContent!, false);
+    for (const args of [{}, { job_id: "job", dispatch_token: TOKEN }, { dispatch_token: TOKEN }]) {
+      assert.equal((await c.client.callTool({ name: "codex_get", arguments: args })).isError, true);
+    }
+  } finally { await c.close(); }
+});
+
+test("a new MCP instance finds the same Job by token and Job, with timestamped receiver reports and unknown Goal", async () => {
+  const f = await fixture();
+  const calls: string[] = [];
+  const manager: DispatchBackend = {
+    async start() { calls.push("start"); return { job_id: "query-job" }; },
+    get(job) { calls.push(job); return { job_id: job, thread_status: "active", last_turn_status: "completed", last_turn_time: "2026-10-09T12:00:00Z", observed_at: "2026-10-09T12:01:00Z" }; },
+  };
+  const first = await connection(manager, f.artifacts, [f.root]);
+  await first.client.callTool({ name: "codex_start", arguments: f.input });
+  await first.close();
+  writeFileSync(path.join(f.root, TOKEN + ".status.md"), "Goal activation was reported; real evidence: native-call-1. Current work: validation. Next: repair.\n");
+  writeFileSync(path.join(f.root, TOKEN + ".result.md"), "# Complete fixed result\n验证记录\n");
+  const next = await connection(manager, f.artifacts, [f.root]);
+  try {
+    for (const args of [{ dispatch_token: TOKEN }, { job_id: "query-job" }]) {
+      const result = await next.client.callTool({ name: "codex_get", arguments: args });
+      const d = result.structuredContent as any;
+      assert.equal(result.isError, undefined);
+      assert.equal(d.job_id, "query-job");
+      assert.equal(d.dispatch_token, TOKEN);
+      assert.equal(d.thread_status, "active");
+      assert.equal(d.last_turn_status, "completed");
+      assert.equal(d.goal_status, "unknown");
+      assert.equal(d.receiver_status.source, "receiver_file_report");
+      assert.match(d.receiver_status.text, /Next: repair/);
+      assert(d.receiver_status.updated_at);
+      assert.equal(d.result.text, "# Complete fixed result\n验证记录\n");
+      assert.equal(d.result.read_status, "complete");
+      assert.equal(d.receipt.value.origin.verification, "unverified_at_bridge");
+    }
+    assert.deepEqual(calls, ["start", "query-job", "query-job"]);
+  } finally { await next.close(); }
+});
+
+test("unknown creation returns its receipt without inventing a Job or querying", async () => {
+  const f = await fixture();
+  await new ReceiptStore(f.artifacts).reserve(await new InstructionStore(f.artifacts, [f.root]).load(f.input));
+  const c = await connection(noAccess(), f.artifacts, [f.root]);
+  try {
+    const r = await c.client.callTool({ name: "codex_get", arguments: { dispatch_token: TOKEN } });
+    assert.equal(r.structuredContent?.job_id, null);
+    assert.equal((r.structuredContent?.receipt as any).value.creation_status, "unknown");
+    assert.equal(r.structuredContent?.goal_status, "unknown");
+  } finally { await c.close(); }
+});
+
+test("legacy Job has native snapshot but no invented file/origin association; native failure retains known receipt", async () => {
+  const f = await fixture();
+  const manager: DispatchBackend = {
+    async start() { return { job_id: "known-job" }; },
+    get(job) { if (job === "known-job") throw new Error("native temporarily unavailable"); return { job_id: job, thread_status: "idle", last_turn_status: "completed" }; },
+  };
+  const c = await connection(manager, f.artifacts, [f.root]);
+  try {
+    const old = await c.client.callTool({ name: "codex_get", arguments: { job_id: "legacy-job" } });
+    assert.equal(old.structuredContent?.receipt, null);
+    assert.equal(old.structuredContent?.dispatch_token, null);
+    assert.equal(old.structuredContent?.correlation_status, "unavailable");
+    await c.client.callTool({ name: "codex_start", arguments: f.input });
+    const failed = await c.client.callTool({ name: "codex_get", arguments: { dispatch_token: TOKEN } });
+    assert.equal(failed.isError, true);
+    assert.equal(failed.structuredContent?.job_id, "known-job");
+    assert.match(String(failed.structuredContent?.native_error), /unavailable/);
+  } finally { await c.close(); }
+});
+
+test("query refuses escaped report paths and oversized output rather than fabricating full results", async () => {
+  const f = await fixture();
+  const receipts = new ReceiptStore(f.artifacts);
+  const record = await receipts.reserve(await new InstructionStore(f.artifacts, [f.root]).load(f.input));
+  await receipts.finish(record, { creation_status: "created", job_id: "report-job", diagnostic: null });
+  const outside = mkdtempSync(path.join(tmpdir(), "codex-report-outside-"));
+  writeFileSync(path.join(outside, TOKEN + ".status.md"), "outside-secret");
+  const alias = path.join(f.root, "outside-alias");
+  symlinkSync(outside, alias, process.platform === "win32" ? "junction" : "dir");
+  const altered = (await receipts.get(TOKEN))!;
+  altered.value.status_path = path.join(alias, TOKEN + ".status.md");
+  writeFileSync(altered.path, JSON.stringify(altered.value));
+  writeFileSync(path.join(f.root, TOKEN + ".result.md"), "x".repeat(257 * 1024));
+  const c = await connection({ async start() { throw new Error("No start"); }, get(job) { return { job_id: job }; } }, f.artifacts, [f.root]);
+  try {
+    const d = (await c.client.callTool({ name: "codex_get", arguments: { dispatch_token: TOKEN } })).structuredContent as any;
+    assert.equal(d.receiver_status.read_status, "refused");
+    assert.equal(d.receiver_status.text, undefined);
+    assert.equal(d.result.read_status, "refused");
+    assert.equal(d.result.text, undefined);
+    // Matching registered path still cannot follow a symlink out of the handoff root.
+    const original = { ...altered.value, instruction_file: path.join(alias, "instruction.md"), result_path: path.join(alias, TOKEN + ".result.md") };
+    writeFileSync(altered.path, JSON.stringify(original));
+    const escaped = (await c.client.callTool({ name: "codex_get", arguments: { dispatch_token: TOKEN } })).structuredContent as any;
+    assert.match(escaped.receiver_status.error, /escapes/);
+  } finally { await c.close(); }
+});
+
+test("unclassified backend error stays unknown despite diagnostic claiming no creation", async () => {
+  const f = await fixture();
+  let starts = 0;
+  const c = await connection({ async start() { starts++; throw new Error("no task created"); }, get() { throw new Error("No query"); } }, f.artifacts, [f.root]);
+  try {
+    const r = await c.client.callTool({ name: "codex_start", arguments: f.input });
+    assert.equal(r.structuredContent?.creation_status, "unknown");
+    assert.match(String(r.structuredContent?.error), /^Creation outcome is unknown/);
     assert.equal(starts, 1);
-  } finally { await client.close(); await server.close(); }
+  } finally { await c.close(); }
+});
+
+test("artifact cleanup error remains explicit and never accesses native backend", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "codex-artifact-error-"));
+  let failed = false;
+  const artifacts = new ArtifactStore(root, undefined, {
+    link, async unlink(file) {
+      if (!failed && file.endsWith(".tmp")) { failed = true; throw Object.assign(new Error("forced unlink failure"), { code: "EACCES" }); }
+      await unlink(file);
+    },
+  });
+  const c = await connection(noAccess(), artifacts, [root]);
+  try {
+    const r = await c.client.callTool({ name: "artifact_put", arguments: { filename: "error.md", content: "body" } });
+    assert.equal(r.isError, true);
+    assert.match(String(r.structuredContent?.error), /Rollback attempted; possible residual paths: none/);
+    assert.deepEqual(readdirSync(root), []);
+  } finally { await c.close(); }
 });

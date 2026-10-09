@@ -1,5 +1,7 @@
 # ChatGPT → Codex 安装包
 
+本地未发布候选已改为单文件指令入口与同 Bridge token 回执查询，接口和验收边界见 [单文件交接](docs/SINGLE-FILE-HANDOFF.md)。以下版本说明保留已发布 v0.1.19 的历史安装事实；不能把本工作树改动当成已安装服务。
+
 让 ChatGPT 使用 codex-dispatch Skill，把任务交给使用者自己电脑上的 Codex 桌面应用。Bridge 只有 artifact_put、codex_start、codex_get 三个工具；派发成功后不自动查询任务。
 
 codex_start 先执行硬 LINT：缺少 Goal、误用 Bridge 技术父会话 ID、任务信息不一致或回传模式不明时，返回 DISPATCH_LINT_FAILED，不创建任务。当前 Skill v0.1.19 要求接收端核对实际权限上下文，并保留一致的 Dispatch token UUID 和 unavailable 标题支持，不要求自动取得项目／标题。查找限最近 20 条未置顶记录和置顶顺序前 10 条；安全方法不能确定窗口时接收端主动问人类并等待。旧真实标题信封兼容。校验器不证明来源或实际回传成功；接收端仍核验真实证据。
