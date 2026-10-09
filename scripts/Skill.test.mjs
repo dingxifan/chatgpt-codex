@@ -34,6 +34,7 @@ function filled(workspace, mode, publication = '') {
     repository: 'example/project', workspace, base_sha: 'a'.repeat(40), method_ref: 'not applicable',
     required_access_profile: 'read-only', access_instruction_locator: 'fixture-human-request',
     route: { route_id: 'fixture-route', computer: 'fixture-machine', bridge_namespace: 'fixture-bridge' },
+    checkpoints: [{ id: 'inspect', title: 'Inspect fixture', required_checks: ['inputs'] }, { id: 'verify', title: 'Verify result', required_checks: ['tests'] }],
     goal_core: 'Inspect only the fixed fixture under project rules; maintain progress and read this same file for details and completion audit. Before asking for return authority read original evidence and existing same-task verification records, reuse applicable genuine authority under the actual tool contract, otherwise wait for required decisions. Freeze and deliver the complete result or the explicitly permitted local alternative; unresolved required work is not completion.',
   });
   value.return.mode = mode;

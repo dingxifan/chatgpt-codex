@@ -22,13 +22,17 @@ Copy the following document, fill its metadata, and write the actual complete bu
   "workspace": "<exact-selected-absolute-workspace>",
   "base_sha": "<actual-full-40-character-sha-or-not-applicable>",
   "method_ref": "<fixed-method-reference-or-not-applicable>",
-  "required_access_profile": "<actual-human-selected-access-profile>",
+  "required_access_profile": "danger-full-access",
   "access_instruction_locator": null,
   "route": {
     "route_id": "<selected-route-id>",
     "computer": "<selected-computer>",
     "bridge_namespace": "<selected-bridge-namespace>"
   },
+  "checkpoints": [
+    {"id": "work", "title": "<actual-first-stage>", "required_checks": ["work_evidence"]},
+    {"id": "verify", "title": "<actual-validation-stage>", "required_checks": ["validation"]}
+  ],
   "return": {
     "mode": "auto",
     "conversation_id": null,
@@ -65,7 +69,9 @@ Actual requested operations and deliverables, allowed actions and human-reserved
 
 Actually activate the mechanically derived Goal in this receiving chat. Verify trustworthy current access against the human selection, then read this COMPLETE file and check transmitted digest/token/task/base. A mismatch stops the affected work without elevation or redispatch.
 
-Keep this SAME Goal through phases. When details, source conflicts or completion audit require it, reread this file. Record admission evidence, current work, validation evidence, remaining items, next action and required human decisions at the registered <token>.status.md beside this instruction; preserve actual authorization verification locators there. Progress is not another instruction source. Fix ordinary engineering failures within scope; required unanswered decisions are not completion.
+Keep this SAME Goal through phases. Use the installed handoff kernel from the generated startup transport, following [its exact input contract](handoff-kernel.md). It is the single entry for admission, checking, phase progression and freezing results. Pass the actual get_goal goal object and trusted current execution context; never invent a Goal ID or copy another context.
+
+When details, source conflicts or completion audit require it, reread this file. Before stage work use check(work); update and close the actual current checkpoint through advance with the current expected revision. Each declared required check needs its real evidence locator and reported pass/fail/not_run outcome. Failed checks are repaired inside the same checkpoint; only necessary external blockers or human decisions enter blockers/pending_decisions. Write status only through the kernel, which preserves existing verification locators. A nonzero exit stops this progression step; fix the actual condition without alternate files, Task/Goal reset, automatic redispatch or backup workflow.
 
 ## 操作步骤与验证
 
@@ -77,7 +83,7 @@ The original wording/source/scope and existing REAL verification locators are in
 
 ## 完成与交付
 
-Write actual completion criteria and delivery requirements. Freeze the full result at registered <token>.result.md beside this instruction, including exact outcomes, fixed Git/artifact identities, validation, limitations and remaining decisions. Receiver return follows the Skill's independent destination-verification alternatives and actual human/tool permissions.
+Write actual completion criteria and delivery requirements. Prepare the full result at registered <token>.result.md beside this instruction, including exact outcomes, fixed Git/artifact identities, validation, limitations and remaining decisions. Use finish to bind its actual SHA256 only after all declared checks pass and required decisions/blockers are clear. Before return use check(delivery), which reloads original return instructions and preserved verification locators. Receiver return follows the Skill's independent destination-verification alternatives and actual human/tool permissions. A structural PASS is not native authentication or authorization.
 
 Automatic mode delivers once to the verified authorized destination and checks the real send receipt. An ambiguous send is not automatically resent. Obtainable required destination/authorization decisions wait; silence is not consent. Use complete immutable local emission only when explicitly chosen by the human or no usable safe return/interactive channel exists, reporting the exact blocker and pending relay. Local files/emission are not ChatGPT receipt. Do not complete the Goal while its required work or decisions remain.
 ~~~~
@@ -86,7 +92,7 @@ Automatic mode delivers once to the verified authorized destination and checks t
 
 Replace the goal_core placeholder with the actual business objective and boundaries plus these operational commitments, in the task's language:
 
-- Read this same file for details/evidence conflicts/completion audit, maintain the registered progress record and keep the same native Goal.
+- Read this same file for details/evidence conflicts/completion audit, use the same installed kernel to check/advance declared checkpoints, maintain the registered progress record and keep the same native Goal.
 - Repair ordinary failures autonomously within scope; ask only for genuinely required unresolved decisions.
 - Before a return-permission question, read the delivered authorization evidence and same-task real verification records; reuse still-applicable genuine authority under the actual tool contract, otherwise report the precise gap.
 - Provide actual completion evidence, freeze the complete result, and finish the authorized delivery or explicitly permitted local alternative. Required unanswered decisions are not complete.
@@ -98,5 +104,7 @@ Bridge appends the actual file path/digest/token/task/repository/workspace/base 
 Use JSON null for genuinely unavailable origin/access/authorization locators. Available human wording may be multiline and must remain verbatim; source and prior-verification locators must refer to observed records, not invented references. All prior-verification fields remain null when verification never happened. Actual receiver verification after reception belongs in its existing chat/status, keeping this source file immutable.
 
 The metadata does not set sandbox/network/approval permissions. Route fields preserve the exact fresh selection; backend allowed roots and unique native Desktop project matching still apply. A declared conversation ID is not a native binding. Never use the technical Bridge/Codex caller as the ChatGPT target.
+
+Set required_access_profile to the actual human-selected canonical value: danger-full-access, workspace-write or read-only. The sample value is not an access grant. Preserve its real human locator when available. Populate checkpoints with this task's ordered stage IDs/titles and required check IDs, then make the body operations/acceptance refer to the same IDs. IDs must be unique; each stage requires at least one check. Do not manufacture checks or replace existing project verification with record keeping.
 
 Prepare-only persists this same file and returns its actual locator/hash/token without creating a task. A persistence failure stops preparation; there is no short-text fallback.

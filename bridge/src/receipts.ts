@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { lstat, readdir, rename, unlink } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { ArtifactStore } from "./artifacts.js";
-import { DISPATCH_TOKEN, readBoundedText, SHA256, parseUniqueJson, type LoadedInstruction } from "./instruction.js";
+import { DISPATCH_TOKEN, readBoundedText, SHA256, parseUniqueJson, KERNEL_CLI, type LoadedInstruction } from "./instruction.js";
 
 const receiptSchema = z.strictObject({
   schema: z.literal("codex-receipt/v1"),
@@ -12,6 +13,8 @@ const receiptSchema = z.strictObject({
   job_id: z.string().min(1).nullable(),
   instruction_file: z.string().min(1),
   instruction_sha256: z.string().regex(SHA256),
+  goal_sha256: z.string().regex(SHA256),
+  kernel_cli: z.string().min(1),
   task_identity: z.string().min(1),
   workspace: z.string().min(1),
   route: z.strictObject({ route_id: z.string(), computer: z.string(), bridge_namespace: z.string() }),
@@ -65,6 +68,7 @@ export class ReceiptStore {
       schema: "codex-receipt/v1", dispatch_token: m.dispatch_token,
       creation_status: "unknown", job_id: null,
       instruction_file: instruction.path, instruction_sha256: instruction.sha256,
+      goal_sha256: createHash("sha256").update(instruction.goal, "utf8").digest("hex"), kernel_cli: KERNEL_CLI,
       task_identity: m.task_identity, workspace: instruction.workspace, route: m.route,
       origin: { verification: "unverified_at_bridge", declared_conversation_id: m.return.conversation_id, declared_title: m.return.title_hint, evidence_locator: m.return.origin_evidence_locator },
       status_path: instruction.status_path, result_path: instruction.result_path,

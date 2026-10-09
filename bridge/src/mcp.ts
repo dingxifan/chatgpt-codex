@@ -1,10 +1,10 @@
-import path from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { ArtifactStore, MAX_ARTIFACT_BYTES } from "./artifacts.js";
 import { DispatchError, type DispatchBackend } from "./desktop.js";
-import { DISPATCH_TOKEN, SHA256, InstructionStore, readBoundedText, type LoadedInstruction } from "./instruction.js";
+import { DISPATCH_TOKEN, SHA256, InstructionStore, type LoadedInstruction } from "./instruction.js";
 import { ReceiptConflictError, ReceiptStore, type ReceiptRecord } from "./receipts.js";
+import { HandoffKernel } from "./handoff-kernel.js";
 
 function success(value: Record<string, unknown>) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }], structuredContent: value };
@@ -16,6 +16,7 @@ export function createMcpServer(manager: DispatchBackend, artifacts: ArtifactSto
   const server = new McpServer({ name: "Codex Agent", version: "0.3.1" });
   const instructions = new InstructionStore(artifacts, options.workspaceRoots);
   const receipts = options.receipts ?? new ReceiptStore(artifacts);
+  const kernel = new HandoffKernel(artifacts);
 
   server.registerTool("artifact_put", {
     title: "Store local text artifact",
@@ -80,22 +81,9 @@ export function createMcpServer(manager: DispatchBackend, artifacts: ArtifactSto
     });
   });
 
-  async function reportFile(receipt: ReceiptRecord, kind: "status" | "result") {
-    const registered = receipt.value[`${kind}_path`];
-    const expected = path.join(path.dirname(receipt.value.instruction_file), `${receipt.value.dispatch_token}.${kind}.md`);
-    if (path.resolve(registered) !== path.resolve(expected)) return { path: registered, read_status: "refused", error: "Receipt report path does not match this instruction/token." };
-    try {
-      const file = await readBoundedText(artifacts.configuredRoot, registered, artifacts.maxBytes);
-      return { present: true, read_status: "complete", source: "receiver_file_report", ...file };
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return { present: false, path: registered };
-      return { path: registered, read_status: "refused", error: message(error) };
-    }
-  }
-
   server.registerTool("codex_get", {
     title: "Query Codex task when requested",
-    description: "Read a single status/result snapshot only when the user explicitly asks for a query or diagnosis. Never use as an automatic start/get polling loop. Supply exactly ONE job_id or dispatch_token. Token uses the receipt in this same Bridge, never searches another machine. Native thread/last-turn status and timestamped receiver reports are distinct; a completed turn or result file does not prove whole Goal completion. Goal state is unknown when no supported native Job Goal interface exists.",
+    description: "Read a single status/result snapshot only when the user explicitly asks for a query or diagnosis. Never use as an automatic start/get polling loop. Supply exactly ONE job_id or dispatch_token. Token uses the receipt in this same Bridge, never searches another machine. The same handoff kernel validates fixed task/file/Goal binding, status shape and checkpoint checks. Invalid/missing status is reported explicitly; result contents are withheld until all declared checks pass, required decisions/blockers are clear and frozen result integrity matches. This is structural validation, not authentication of native Goal, evidence or human authority. Native thread/last-turn status remain separate. Goal state is unknown when no supported native Job Goal interface exists.",
     inputSchema: z.strictObject({
       job_id: z.string().min(1).optional(),
       dispatch_token: z.string().regex(DISPATCH_TOKEN).optional(),
@@ -128,18 +116,39 @@ export function createMcpServer(manager: DispatchBackend, artifacts: ArtifactSto
         try { native = await manager.get(job_id, { detail }); }
         catch (error) { native_error = message(error); }
       }
+      const inspection = receipt ? await kernel.inspect(receipt) : null;
+      const { frozen_result_file: frozenFile, ...statusSnapshot } = inspection ?? {};
+      const receiverStatus = inspection ? statusSnapshot : null;
+      const record = receiverStatus?.record as { frozen_result?: unknown } | undefined;
+      const result = receipt
+        ? receiverStatus?.validation && (receiverStatus.validation as { status?: string }).status === "valid" && record?.frozen_result
+          ? frozenFile as Record<string, unknown>
+          : { path: receipt.value.result_path, read_status: "refused", error: "DELIVERY_GATE_BLOCKED: a valid, complete checkpoint record and unchanged frozen result are required." }
+        : null;
+      const nativeReport = { ...native };
+      if (receipt) {
+        // Managed results have one validated content channel; native prose/debug is not a substitute.
+        nativeReport.native_message_present = typeof native.final_message === "string";
+        delete nativeReport.final_message;
+        const snapshot = nativeReport.native_snapshot as Record<string, unknown> | undefined;
+        if (snapshot) {
+          nativeReport.native_snapshot_metadata = { thread: snapshot.thread, latestTurn: snapshot.latestTurn, revision: snapshot.revision, cursor: snapshot.cursor };
+          delete nativeReport.native_snapshot;
+        }
+      }
       const value = {
-        ...native, job_id: job_id ?? null,
+        ...nativeReport, job_id: job_id ?? null,
         dispatch_token: receipt?.value.dispatch_token ?? dispatch_token ?? null,
         receipt,
         correlation_status: receipt ? "recorded_at_selected_bridge" : "unavailable",
         goal_status: "unknown",
         goal_status_source: "not_available_in_native_snapshot",
+        delivery_gate: { status: result?.read_status === "complete" ? "passed_structural_checks" : receipt ? "blocked" : "unavailable", native_authorization: "not_verified_by_kernel" },
         ...(lookup_errors.length ? { lookup_errors } : {}),
         ...(native_error ? { native_error } : {}),
         ...(receipt ? {
-          receiver_status: await reportFile(receipt, "status"),
-          result: await reportFile(receipt, "result"),
+          receiver_status: receiverStatus,
+          result,
         } : {}),
       };
       return { ...(native_error ? { isError: true } : {}), ...success(value) };

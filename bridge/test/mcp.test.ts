@@ -11,6 +11,9 @@ import { DesktopCodex, NativeCallNotSubmittedError, parseNativeResult, type Disp
 import { createMcpServer } from "../src/mcp.js";
 import { ReceiptStore } from "../src/receipts.js";
 import { InstructionStore } from "../src/instruction.js";
+import { HandoffKernel } from "../src/handoff-kernel.js";
+import { createHash } from "node:crypto";
+import { advanceData } from "./kernel-fixture.js";
 import { fixture, instructionText, TOKEN } from "./instruction-fixture.js";
 
 async function connection(manager: DispatchBackend, artifacts: ArtifactStore, roots: string[], receipts?: ReceiptStore) {
@@ -281,8 +284,18 @@ test("a new MCP instance finds the same Job by token and Job, with timestamped r
   const first = await connection(manager, f.artifacts, [f.root]);
   await first.client.callTool({ name: "codex_start", arguments: f.input });
   await first.close();
-  writeFileSync(path.join(f.root, TOKEN + ".status.md"), "Goal activation was reported; real evidence: native-call-1. Current work: validation. Next: repair.\n");
-  writeFileSync(path.join(f.root, TOKEN + ".result.md"), "# Complete fixed result\n验证记录\n");
+  const loaded = await new InstructionStore(f.artifacts, [f.root]).load(f.input);
+  const kernel = new HandoffKernel(f.artifacts);
+  const goal = { threadId: "query-job", objective: loaded.goal, status: "active", createdAt: 1 };
+  await kernel.apply(TOKEN, "query-job", "admit", 0, {
+    goal, goal_activation_record: "mock:goal-call", execution_context_record: "mock:actual-context", instruction_read_record: "mock:full-read",
+    execution_context: { sandbox_mode: "read-only", approval_policy: "never", network_access: false }, summary: "received", next_action: "inspect",
+  });
+  await kernel.apply(TOKEN, "query-job", "advance", 1, advanceData(goal));
+  await kernel.apply(TOKEN, "query-job", "advance", 2, advanceData(goal, "verify"));
+  const fullResult = "# Complete fixed result\n验证记录\n";
+  writeFileSync(loaded.result_path, fullResult);
+  await kernel.apply(TOKEN, "query-job", "finish", 3, { goal, result_sha256: createHash("sha256").update(fullResult).digest("hex"), summary: "checked result", next_action: "actual return verification", verification_records: [] });
   const next = await connection(manager, f.artifacts, [f.root]);
   try {
     for (const args of [{ dispatch_token: TOKEN }, { job_id: "query-job" }]) {
@@ -295,10 +308,13 @@ test("a new MCP instance finds the same Job by token and Job, with timestamped r
       assert.equal(d.last_turn_status, "completed");
       assert.equal(d.goal_status, "unknown");
       assert.equal(d.receiver_status.source, "receiver_file_report");
-      assert.match(d.receiver_status.text, /Next: repair/);
+      assert.equal(d.receiver_status.validation.status, "valid");
+      assert.equal(d.receiver_status.record.current_checkpoint, null);
+      assert.equal(d.receiver_status.record.revision, 4);
       assert(d.receiver_status.updated_at);
       assert.equal(d.result.text, "# Complete fixed result\n验证记录\n");
       assert.equal(d.result.read_status, "complete");
+      assert.equal(d.delivery_gate.status, "passed_structural_checks");
       assert.equal(d.receipt.value.origin.verification, "unverified_at_bridge");
     }
     assert.deepEqual(calls, ["start", "query-job", "query-job"]);
@@ -314,6 +330,32 @@ test("unknown creation returns its receipt without inventing a Job or querying",
     assert.equal(r.structuredContent?.job_id, null);
     assert.equal((r.structuredContent?.receipt as any).value.creation_status, "unknown");
     assert.equal(r.structuredContent?.goal_status, "unknown");
+  } finally { await c.close(); }
+});
+
+test("native completed turn and a loose result cannot bypass missing/invalid checkpoint status", async () => {
+  const f = await fixture();
+  const receipts = new ReceiptStore(f.artifacts);
+  const record = await receipts.reserve(await new InstructionStore(f.artifacts, [f.root]).load(f.input));
+  await receipts.finish(record, { creation_status: "created", job_id: "claimed-complete-job", diagnostic: null });
+  writeFileSync(path.join(f.root, TOKEN + ".result.md"), "# Claimed complete\n");
+  const c = await connection({
+    async start() { throw new Error("No start"); },
+    get(job) { return { job_id: job, thread_status: "idle", last_turn_status: "completed", final_message: "claimed complete", native_snapshot: { thread: { id: job }, latestAssistantMessage: { text: "claimed complete" } } }; },
+  }, f.artifacts, [f.root]);
+  try {
+    for (const content of [null, "# status\nAll done"]) {
+      if (content !== null) writeFileSync(path.join(f.root, TOKEN + ".status.md"), content);
+      const d = (await c.client.callTool({ name: "codex_get", arguments: { dispatch_token: TOKEN } })).structuredContent as any;
+      assert.equal(d.delivery_gate.status, "blocked");
+      assert.equal(d.result.read_status, "refused");
+      assert.equal(d.result.text, undefined);
+      assert.equal(d.receiver_status.validation.status, content === null ? "missing" : "invalid");
+      assert.equal(d.goal_status, "unknown");
+      assert.equal(d.final_message, undefined);
+      assert.equal(d.native_snapshot, undefined);
+      assert.equal(d.native_message_present, true);
+    }
   } finally { await c.close(); }
 });
 
@@ -344,6 +386,7 @@ test("query refuses escaped report paths and oversized output rather than fabric
   await receipts.finish(record, { creation_status: "created", job_id: "report-job", diagnostic: null });
   const outside = mkdtempSync(path.join(tmpdir(), "codex-report-outside-"));
   writeFileSync(path.join(outside, TOKEN + ".status.md"), "outside-secret");
+  writeFileSync(path.join(outside, "instruction.md"), instructionText(f.metadata));
   const alias = path.join(f.root, "outside-alias");
   symlinkSync(outside, alias, process.platform === "win32" ? "junction" : "dir");
   const altered = (await receipts.get(TOKEN))!;

@@ -12,6 +12,8 @@
 
 持续执行：沿同一 Goal 工作，阶段进展写 status，需要细节、依据冲突或最终审计时回读同一指令。回传前先读原始授权与已有真实核验记录，按真实工具合同复用适用授权；文件或程序不替代人类许可。
 
+当前正常主线使用一个本地交接检查程序：[精确调用规约](../plugin/codex-dispatch/skills/codex-dispatch/references/handoff-kernel.md)。指令元信息声明有序 checkpoints 和每阶段 required_checks；没有这些确定条件时，派发前拒绝。接收、阶段检查／推进、结果冻结均使用同一程序。get_goal 的实际报告与可信当前权限数据需要核验；程序对数据结构／任务／Goal 绑定的检查不冒充原生鉴别。
+
 默认目录为 `%USERPROFILE%\.codex-agent-mcp\handoff`，使用现有 CODEX_AGENT_HANDOFF_ROOT 行政配置。指令 `<token>.instruction.md`、进展 `<token>.status.md`、完整结果 `<token>.result.md` 使用同一父目录；根目录的 `<token>.receipt.json` 保存实际关联。文件输入在实际 root 内有界读取，不开放任意路径接口。
 
 ## 实际接口
@@ -61,6 +63,14 @@ token 查询只读本 Bridge 同名回执。Job 查询调用已知原生任务�
 thread_status 是原生线程状态；last_turn_status/time 是最近一轮及可取得的时间；observed_at 是查询时间。旧 status 字段现在与 thread_status 一致，不再使用最近一轮状态代替整个任务。
 
 receiver_status/result 是对应注册文件的完整 UTF-8 内容、实际 SHA256 和更新时间，明确标为 receiver_file_report；拒绝越界、二进制、超限或不匹配的路径，不静默截断。文件存在、turn completed、idle/notLoaded 都不是整体完成证据。
+
+status 由程序统一生成 codex-status/v1 的 Markdown＋JSON，保存当前阶段、必需检查的报告结果／证据历史、必要阻碍／决策、核验定位、版本号和冻结结果摘要。正常更新用瞬时锁、expected_revision、前一份文件摘要和原子替换；不允许直接手改或旧自由文本替代。缺检查、FAIL／NOT_RUN、跳阶段、任务／Goal／权限声明冲突、漏掉原始核验定位或仍有必要决策时拒绝推进／冻结；普通检查失败可在同阶段修复。
+
+查询用同一个验证器。缺失／不合法 status 明确报告，未全部通过并冻结的 result 不返回正文。冻结后正文变化也拒绝；返回正文来自同一份已经检查摘要的读取快照。check(delivery) 每次加载唯一指令中的原始回传／授权资料和保留的核验定位。结构检查通过不代表人类许可成立、原生 Goal 完成或项目验证真实通过。
+
+受管任务的 final_message／原始 debug 助手正文不再作为结果旁路；只保留线程／turn 的原生诊断元数据，正式正文由 result 返回。无可用回执的旧 Job 仍能查询原生信息，但交付检查明确 unavailable，不冒充本方案已验收结果。
+
+四份持久文件保持不变；写入时的锁／临时文件正常会清理。原生任意直接工具调用无法由这个本地程序拦截，因此这里没有声称全局不可绕过，也没有新增后台监督、另一套指令、授权凭证或兜底执行器。
 
 目前支持的 native wait_threads 不含 Goal 状态。goal_status 固定报告 unknown，来源为 not_available_in_native_snapshot；不改技术调用上下文去冒充接收任务调用 get_goal。接收端报告只是注明来源/时间的证据。
 

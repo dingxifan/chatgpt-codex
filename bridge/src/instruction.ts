@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { open, realpath } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { ArtifactStore, MAX_ARTIFACT_BYTES } from "./artifacts.js";
 import { validateWorkspace } from "./workspaces.js";
@@ -8,6 +9,7 @@ import { validateWorkspace } from "./workspaces.js";
 export const DISPATCH_TOKEN = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 export const SHA256 = /^[a-f0-9]{64}$/i;
 export const MAX_GOAL_LENGTH = 4000;
+export const KERNEL_CLI = fileURLToPath(new URL("./handoff-kernel-cli.js", import.meta.url));
 const fact = z.string().min(1).refine(value => value.trim().length > 0 && !/[\r\n\0]|<[^>]+>|\[.*placeholder.*\]/i.test(value), "Use a nonblank, single-line fact and resolve placeholders before dispatch.");
 const locator = fact.nullable();
 
@@ -19,9 +21,13 @@ export const instructionMetadataSchema = z.strictObject({
   workspace: fact,
   base_sha: z.union([z.string().regex(/^[a-f0-9]{40}$/i), z.literal("not applicable")]),
   method_ref: fact,
-  required_access_profile: fact,
+  required_access_profile: z.enum(["danger-full-access", "workspace-write", "read-only"]),
   access_instruction_locator: locator,
   route: z.strictObject({ route_id: fact, computer: fact, bridge_namespace: fact }),
+  checkpoints: z.array(z.strictObject({
+    id: z.string().regex(/^[a-z][a-z0-9_-]*$/), title: fact,
+    required_checks: z.array(z.string().regex(/^[a-z][a-z0-9_-]*$/)).min(1).refine(items => new Set(items).size === items.length, "Required check IDs must be unique."),
+  })).min(1).refine(items => new Set(items.map(item => item.id)).size === items.length, "Checkpoint IDs must be unique."),
   return: z.strictObject({
     mode: z.enum(["auto", "manual"]),
     conversation_id: locator,
@@ -132,6 +138,8 @@ export function compileGoal(metadata: InstructionMetadata, file: Pick<TextFile, 
     `Repository: ${metadata.repository}`,
     `Workspace: ${metadata.workspace}`,
     `BASE_SHA: ${metadata.base_sha}`,
+    `Handoff kernel: ${KERNEL_CLI}`,
+    "Use the kernel to admit this task, check before stage work, advance only the declared checkpoint, and validate the frozen result before delivery. A failed check stops advancement; no bypass, alternate file or automatic redispatch.",
   ].join("\n");
   if (goal.length > MAX_GOAL_LENGTH) throw new Error(`Compiled Goal exceeds ${MAX_GOAL_LENGTH} characters; shorten goal_core in the source file, never truncate.`);
   return goal;
@@ -161,6 +169,9 @@ export class InstructionStore {
       `Read the COMPLETE instruction file at ${JSON.stringify(file.path)}; verify its UTF-8 bytes against SHA256 ${file.sha256} and dispatch token ${metadata.dispatch_token} before relying on its contents. Missing/changed/unreadable inputs require a precise report, not another file or task.`,
       "All business scope, operations, validation, source facts and return authorization evidence are in that ONE file. The Goal above is mechanically derived from its goal_core. This transport is not a second authored business instruction.",
       `Record reception, actual Goal activation/context/file checks and meaningful progress in ${JSON.stringify(status_path)}. Record current work, evidence, remaining items, next action and required human decisions. Preserve existing verification locators; status is a progress record, not another instruction source.`,
+      `Kernel executable prefix (JSON argument array; use literal shell argument quoting): ${JSON.stringify([process.execPath, KERNEL_CLI])}. Following arguments: <admit|advance|finish|check>, ${JSON.stringify(this.artifacts.configuredRoot)}, ${metadata.dispatch_token}, <expected_revision>. Supply action data as JSON on stdin, not another instruction file. Native execution identity comes from this receiving task's CODEX_THREAD_ID; never copy another caller context or change permissions.`,
+      "Read get_goal and pass its actual goal object as the goal input (threadId, objective, active status, createdAt). admit additionally requires actual activation/context/file-read evidence locators and a confirmed creation receipt. check selects purpose work/delivery. advance names the current checkpoint and uses complete=false for a progress/blocker update, complete=true only with evidence and no open blockers/decisions. finish requires all checkpoints done, no blockers/decisions and the actual result SHA256. Stop on nonzero exit and repair only the reported problem; preserve the same task/Goal.",
+      "The kernel checks file/task/Goal binding, shape, checkpoint ordering, revision and result integrity; admission/evidence locators remain receiver reports, not authenticated native state or human authorization. Actual project verification and send-tool permission still apply. Do not claim that a passing structural check proves them.",
       `Freeze the complete final result in ${JSON.stringify(result_path)}. Files in this local directory are not proof that ChatGPT received the result.`,
       "When details, evidence conflicts or completion audit require it, reread the same instruction file. Before requesting return permission, read its fixed authorization_evidence and same-task prior verification records. Reuse genuine applicable authorization admitted by the real tool contract; the file, Goal and model summaries cannot create human consent. Verify the destination separately. Report the exact missing evidence only after reading what was delivered.",
       "Use the actual Goal tool's completion/blocked rules. A completed turn, status file or result file alone does not prove the complete Goal. Do not create another task, automatically poll, or send a test message.",
