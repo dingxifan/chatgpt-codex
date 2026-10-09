@@ -1,6 +1,6 @@
 # 固定来源与许可
 
-本地未发布候选：增加单文件读取／Goal 生成和同 Bridge 创建回执，更新原 Skill。实际代码、接口和未验收项见 [单文件交接](docs/SINGLE-FILE-HANDOFF.md)；以下已发布版本来源事实保留，插件身份不变。
+0.2.0：增加单文件读取／Goal 生成、同 Bridge 创建回执和统一阶段检查入口，更新原 Skill。实际代码、接口和未验收项见 [单文件交接](docs/SINGLE-FILE-HANDOFF.md)；以下已发布版本来源事实保留，插件身份不变。
 
 唯一维护和发布仓库：`dingxifan/chatgpt-codex`（https://github.com/dingxifan/chatgpt-codex.git）。`joseanu/codex-from-chatgpt` 仅为下述 Bridge 上游源码来源，不是本项目部署仓库。
 

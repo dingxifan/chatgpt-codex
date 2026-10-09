@@ -1,6 +1,6 @@
 # ChatGPT → Codex 安装包
 
-本地未发布候选已改为单文件指令入口与同 Bridge token 回执查询，接口和验收边界见 [单文件交接](docs/SINGLE-FILE-HANDOFF.md)。以下版本说明保留已发布 v0.1.19 的历史安装事实；不能把本工作树改动当成已安装服务。
+0.2.0 已改为单文件指令入口与同 Bridge token 回执查询，接口和验收边界见 [单文件交接](docs/SINGLE-FILE-HANDOFF.md)。以下版本说明保留已发布 v0.1.19 的历史安装事实；不能把本工作树改动当成已安装服务。
 
 让 ChatGPT 使用 codex-dispatch Skill，把任务交给使用者自己电脑上的 Codex 桌面应用。Bridge 只有 artifact_put、codex_start、codex_get 三个工具；派发成功后不自动查询任务。
 

@@ -16,12 +16,15 @@ const template = format.match(/~~~~markdown\r?\n([\s\S]*?)\r?\n~~~~/)[1];
 const metadataJson = template.match(/```json\r?\n([\s\S]*?)\r?\n```/)[1];
 const baseline = 'dae0c1138bde9f6adbff80bbb67f5b18c127bcbe';
 
-test('existing Skill discovery and plugin identity stay unchanged in this unreleased local candidate', () => {
+test('Skill discovery and plugin identity remain unchanged while both release manifests advance together', () => {
   const oldSkill = execFileSync('git', ['show', `${baseline}:${relative}`], { cwd: root, encoding: 'utf8' }).replaceAll('\r\n', '\n');
   assert.equal(skill.match(/^---\n[\s\S]*?\n---/)[0], oldSkill.match(/^---\n[\s\S]*?\n---/)[0]);
   for (const relative of ['plugin/codex-dispatch/plugin.json', 'plugin/codex-dispatch/.codex-plugin/plugin.json']) {
     const current = JSON.parse(readFileSync(path.join(root, relative), 'utf8'));
     const old = JSON.parse(execFileSync('git', ['show', `${baseline}:${relative}`], { cwd: root, encoding: 'utf8' }));
+    assert.equal(current.version, '0.2.0');
+    delete current.version;
+    delete old.version;
     assert.deepEqual(current, old);
   }
   assert.match(skill, /references\/instruction-file\.md/);
