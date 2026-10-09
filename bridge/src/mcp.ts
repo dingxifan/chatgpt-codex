@@ -50,7 +50,7 @@ export function createMcpServer(manager: DispatchBackend, artifacts: ArtifactSto
       const existing = error instanceof ReceiptConflictError ? error.existing : null;
       return { isError: true, ...success({
         status: "failed", error_code: "DISPATCH_RECEIPT_CONFLICT", error: message(error),
-        creation_status: existing?.value.creation_status ?? "not_created",
+        creation_status: error instanceof ReceiptConflictError ? error.creation_status : "not_created",
         ...(existing ? { job_id: existing.value.job_id, receipt: existing, dispatch_token: input.dispatch_token } : {}),
         attempt_submitted: false,
       }) };
@@ -112,9 +112,15 @@ export function createMcpServer(manager: DispatchBackend, artifacts: ArtifactSto
         if (!receipt) return failure("No receipt for this token in the selected Bridge; do not probe another Bridge.");
         job_id = receipt.value.job_id ?? undefined;
       } else {
-        const found = await receipts.findByJob(job_id!);
-        receipt = found.receipt;
-        lookup_errors = found.lookup_errors;
+        try {
+          const found = await receipts.findByJob(job_id!);
+          receipt = found.receipt;
+          lookup_errors = found.lookup_errors;
+        } catch (error) {
+          // The explicit native Job remains queryable when local correlation is damaged.
+          receipt = null;
+          lookup_errors = [message(error)];
+        }
       }
       let native: Record<string, unknown> = { job_id: job_id ?? null, thread_status: "unknown", last_turn_status: "unknown", goal_status: "unknown", observed_at: new Date().toISOString() };
       let native_error: string | undefined;

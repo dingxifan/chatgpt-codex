@@ -1,6 +1,6 @@
 # Single execution instruction format
 
-Use this format for every handoff. Fill real facts before artifact_put; the template itself is not a dispatchable task. Use exactly one metadata section with exactly one JSON block immediately below its heading. Duplicate sections/JSON keys or unresolved required facts fail preflight. Other JSON examples belong in the business body, never in the metadata section.
+Use this format for every handoff. Fill real facts before artifact_put; the template itself is not a dispatchable task. Use exactly one unquoted metadata section with exactly one JSON block immediately below its heading. Do not wrap the complete instruction in a code fence or blockquote. Duplicate live sections/JSON keys or unresolved required facts fail preflight. Fenced examples in the business body cannot supply or redefine metadata.
 
 The instruction is one UTF-8 Markdown file, at most 256 KiB on the default Bridge. Persist it once as `<token>.instruction.md`. codex_start takes its actual path, actual SHA256 and identical token; no prompt/workspace arguments. Do not place its own digest or future Job ID inside it.
 

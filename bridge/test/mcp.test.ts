@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { link, realpath, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -185,6 +185,64 @@ test("receipt save failure preserves created and actual Job; reservation prevent
     assert.equal((await receipts.get(TOKEN))?.value.creation_status, "unknown");
     assert.equal((await c.client.callTool({ name: "codex_start", arguments: f.input })).structuredContent?.attempt_submitted, false);
     assert.equal(starts, 1);
+  } finally { await c.close(); }
+});
+
+test("unreadable existing receipt keeps previous creation unknown, never claims no earlier task", async () => {
+  const f = await fixture();
+  let starts = 0;
+  const c = await connection({ async start() { starts++; return { job_id: "earlier-created-job" }; }, get() { throw new Error("No automatic query"); } }, f.artifacts, [f.root]);
+  try {
+    const first = await c.client.callTool({ name: "codex_start", arguments: f.input });
+    assert.equal(first.structuredContent?.job_id, "earlier-created-job");
+    writeFileSync(path.join(f.root, TOKEN + ".receipt.json"), "{broken-receipt");
+    const second = await c.client.callTool({ name: "codex_start", arguments: f.input });
+    assert.equal(second.isError, true);
+    assert.equal(second.structuredContent?.attempt_submitted, false);
+    assert.equal(second.structuredContent?.creation_status, "unknown");
+    assert.equal(starts, 1);
+  } finally { await c.close(); }
+});
+
+test("dangling receipt entry is unreadable prior evidence, not a missing unused token", async () => {
+  const f = await fixture();
+  const target = path.join(f.root, "deleted-receipt-target");
+  mkdirSync(target);
+  symlinkSync(target, path.join(f.root, TOKEN + ".receipt.json"), process.platform === "win32" ? "junction" : "dir");
+  rmdirSync(target);
+  const c = await connection(noAccess(), f.artifacts, [f.root]);
+  try {
+    const result = await c.client.callTool({ name: "codex_start", arguments: f.input });
+    assert.equal(result.isError, true);
+    assert.equal(result.structuredContent?.creation_status, "unknown");
+    assert.equal(result.structuredContent?.attempt_submitted, false);
+  } finally { await c.close(); }
+});
+
+test("explicit Job snapshot survives conflicting local receipts; token still requires readable exact correlation", async () => {
+  const f = await fixture();
+  const records = new ReceiptStore(f.artifacts);
+  const reserved = await records.reserve(await new InstructionStore(f.artifacts, [f.root]).load(f.input));
+  const finished = await records.finish(reserved, { creation_status: "created", job_id: "explicit-known-job", diagnostic: null });
+  const secondToken = "b3f29391-ef2c-46ed-912f-1c24d981a4d4";
+  writeFileSync(path.join(f.root, secondToken + ".receipt.json"), JSON.stringify({ ...finished.value, dispatch_token: secondToken }));
+  let queries = 0;
+  const c = await connection({
+    async start() { throw new Error("No creation"); },
+    get(job) { queries++; assert.equal(job, "explicit-known-job"); return { job_id: job, thread_status: "active" }; },
+  }, f.artifacts, [f.root]);
+  try {
+    const result = await c.client.callTool({ name: "codex_get", arguments: { job_id: "explicit-known-job" } });
+    assert.equal(result.isError, undefined);
+    assert.equal(result.structuredContent?.thread_status, "active");
+    assert.equal(result.structuredContent?.receipt, null);
+    assert.equal(result.structuredContent?.correlation_status, "unavailable");
+    assert.match(String(result.structuredContent?.lookup_errors), /Multiple receipts/);
+    assert.equal(queries, 1);
+    writeFileSync(path.join(f.root, TOKEN + ".receipt.json"), "{broken-receipt");
+    const tokenResult = await c.client.callTool({ name: "codex_get", arguments: { dispatch_token: TOKEN } });
+    assert.equal(tokenResult.isError, true);
+    assert.equal(queries, 1);
   } finally { await c.close(); }
 });
 

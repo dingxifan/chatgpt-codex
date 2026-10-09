@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { readdir, rename, unlink } from "node:fs/promises";
+import { lstat, readdir, rename, unlink } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { ArtifactStore } from "./artifacts.js";
@@ -29,7 +29,7 @@ const receiptSchema = z.strictObject({
 export type Receipt = z.infer<typeof receiptSchema>;
 export type ReceiptRecord = { path: string; value: Receipt };
 export class ReceiptConflictError extends Error {
-  constructor(readonly existing: ReceiptRecord | null, message: string) { super(message); }
+  constructor(readonly existing: ReceiptRecord | null, message: string, readonly creation_status = existing?.value.creation_status ?? "not_created") { super(message); }
 }
 export type ReceiptOperations = { rename(source: string, destination: string): Promise<void> };
 
@@ -46,7 +46,14 @@ export class ReceiptStore {
     const filePath = path.join(this.artifacts.configuredRoot, this.filename(token));
     let file;
     try { file = await readBoundedText(this.artifacts.configuredRoot, filePath, this.artifacts.maxBytes); }
-    catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return null; throw error; }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        // A dangling entry is an unreadable prior record, not proof of absence.
+        try { await lstat(filePath); }
+        catch (missing) { if ((missing as NodeJS.ErrnoException).code === "ENOENT") return null; throw missing; }
+      }
+      throw error;
+    }
     const value = receiptSchema.parse(parseUniqueJson(file.text));
     if (value.dispatch_token !== token || (value.creation_status === "created") !== (value.job_id !== null)) throw new Error("Receipt identity/outcome is inconsistent.");
     return { path: file.path, value };
@@ -69,7 +76,11 @@ export class ReceiptStore {
       return { path: file.path, value };
     } catch (error) {
       // Exclusive publication also rejects simultaneous submissions in another MCP session.
-      const existing = await this.get(m.dispatch_token).catch(() => null);
+      let existing: ReceiptRecord | null;
+      try { existing = await this.get(m.dispatch_token); }
+      catch (readError) {
+        throw new ReceiptConflictError(null, `Receipt is unreadable; prior creation outcome remains unknown. No new native request submitted. ${readError instanceof Error ? readError.message : String(readError)}`, "unknown");
+      }
       if (existing) throw new ReceiptConflictError(existing, "Token already reserved or used; inspect the existing receipt, do not create another task.");
       throw new ReceiptConflictError(null, `Receipt could not be reserved; no native request submitted. ${error instanceof Error ? error.message : String(error)}`);
     }

@@ -66,6 +66,15 @@ test("technical caller is never accepted as source/target; unknown authorization
   assert.throws(() => parseInstruction(instructionText({ ...value, return: { ...value.return, authorized: true } } as any)), /authorized/);
 });
 
+test("quoted document cannot supply live metadata; body code examples do not redefine it", () => {
+  const value = metadata(path.resolve("fixture"));
+  const text = instructionText(value);
+  assert.throws(() => parseInstruction("~~~~markdown\n" + text + "\n~~~~\n"), /Exactly one/);
+  assert.throws(() => parseInstruction(text.split("\n").map(line => "> " + line).join("\n")), /Exactly one/);
+  const embedded = instructionText(value, "## 操作与授权依据\nRead only this fixture.\n\n~~~~markdown\n" + text + "\n~~~~\n");
+  assert.deepEqual(parseInstruction(embedded), value);
+});
+
 test("Goal overflow and disallowed workspace fail before transport; aliases retain declared facts", async () => {
   const long = await fixture("auto", value => { value.goal_core = "x".repeat(MAX_GOAL_LENGTH); });
   await assert.rejects(new InstructionStore(long.artifacts, [long.root]).load(long.input), /Compiled Goal exceeds/);

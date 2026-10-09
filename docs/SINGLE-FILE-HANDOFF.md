@@ -42,6 +42,8 @@ codex_get 保留 detail=compact|standard|debug，恰好选择一个：
 
 token 查询只读本 Bridge 同名回执。Job 查询调用已知原生任务，并在同 root 的回执文件中查对应关联；旧 Job 无回执时返回原生快照并明确关联未知。不扫描其他电脑或聊天窗口。
 
+本地回执损坏／冲突不阻断显式 Job 的原生查询：返回原生快照，关联记为不可取得，并保留 lookup_errors；不猜指令或来源。token 缺少可读的准确回执时仍拒绝查询，不猜 Job。
+
 ## 创建与失败事实
 
 - 校验失败：not_created／DISPATCH_INSTRUCTION_INVALID；不调用原生 start。
@@ -50,6 +52,7 @@ token 查询只读本 Bridge 同名回执。Job 查询调用已知原生任务�
 - 已确认 Job：created；导航或保存最终回执失败仍返回真实 Job。
 - 保存失败：receipt_saved=false 和明确 receipt_error；回执可能仍为 unknown，此时不能声称 token 已能查到 Job。保留原调用中的 Job 供查询。
 - 同 token 再提交：拒绝新提交，返回可读的已有事实。相同 token 的并发请求也最多调用一次本地 start；这不构成原生 exactly-once 承诺。
+- 已有回执不可读／损坏：先前创建结果保持 unknown，新尝试未提交；不能把读取失败称为先前任务未创建。
 
 创建前回执预留的 unknown 仅表示没有已确认结果，不能推定请求已提交。预留失败不发起原生创建。已预留 token 不自动复用；需要修正 immutable 文件时使用新文件名，已创建或不明任务必须先人工核查。
 

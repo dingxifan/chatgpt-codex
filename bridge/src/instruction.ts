@@ -97,10 +97,22 @@ export function parseUniqueJson(text: string): unknown {
 
 export function parseInstruction(text: string, technicalCallerId?: string): InstructionMetadata {
   const normalized = text.replace(/^\uFEFF/, "").replaceAll("\r\n", "\n");
-  if ((normalized.match(/^## 任务元信息[ \t]*$/gm) ?? []).length !== 1) throw new Error("Exactly one '## 任务元信息' section is required.");
-  const metadataSection = /^## 任务元信息[ \t]*\n[ \t]*\n```json[ \t]*\n([\s\S]*?)\n```[ \t]*(?:\n|$)/m.exec(normalized);
+  const metadataOffsets: number[] = [];
+  let offset = 0;
+  let fence: { marker: string; length: number } | null = null;
+  for (const line of normalized.split("\n")) {
+    const marker = /^[ ]{0,3}(`{3,}|~{3,})(.*)$/.exec(line);
+    if (marker) {
+      if (!fence) fence = { marker: marker[1]![0]!, length: marker[1]!.length };
+      else if (marker[1]![0] === fence.marker && marker[1]!.length >= fence.length && !marker[2]!.trim()) fence = null;
+    } else if (!fence && /^## 任务元信息[ \t]*$/.test(line)) metadataOffsets.push(offset);
+    offset += line.length + 1;
+  }
+  if (metadataOffsets.length !== 1) throw new Error("Exactly one unquoted '## 任务元信息' section is required.");
+  const metadataStart = metadataOffsets[0]!;
+  const metadataSection = /^## 任务元信息[ \t]*\n[ \t]*\n```json[ \t]*\n([\s\S]*?)\n```[ \t]*(?:\n|$)/.exec(normalized.slice(metadataStart));
   if (!metadataSection) throw new Error("Metadata must be one JSON fence immediately after '## 任务元信息'.");
-  const sectionTail = normalized.slice(metadataSection.index + metadataSection[0].length);
+  const sectionTail = normalized.slice(metadataStart + metadataSection[0].length);
   const beforeNextHeading = sectionTail.split(/^## /m)[0] ?? "";
   if (beforeNextHeading.trim()) throw new Error("Metadata section must contain only its single JSON block.");
   if (!/^## [^\n]+\n[\s\S]*\S/m.test(sectionTail)) throw new Error("Instruction body is required after metadata.");
