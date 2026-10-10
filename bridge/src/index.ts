@@ -64,7 +64,7 @@ async function main(): Promise<void> {
       let session = sessionId ? sessions.get(sessionId) : undefined;
       if (!session && !sessionId && isInitializeRequest(body)) {
         let transport: StreamableHTTPServerTransport;
-        const server = createMcpServer(jobs, artifacts);
+        const server = createMcpServer(jobs, artifacts, { workspaceRoots: config.workspaceRoots });
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
           enableJsonResponse: true,

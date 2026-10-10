@@ -31,6 +31,12 @@ $source = Join-Path $taskRoot 'plugin\codex-dispatch\skills\codex-dispatch\SKILL
 & (Join-Path $PSScriptRoot 'Install.ps1') -WorkspaceRoots @($taskRoot) -Port 19999 -SkillDirectory $skill -SkipDependencies | Out-Null
 if ([Convert]::ToBase64String([IO.File]::ReadAllBytes($config)) -ne [Convert]::ToBase64String($originalConfig)) { throw 'Existing config was changed.' }
 if ((Get-FileHash -LiteralPath (Join-Path $skill 'SKILL.md')).Hash -ne (Get-FileHash -LiteralPath $source).Hash) { throw 'Skill installation differs.' }
+$sourceSkillRoot = Split-Path $source -Parent
+foreach ($file in Get-ChildItem -LiteralPath $sourceSkillRoot -Recurse -File -Force) {
+    $relative = $file.FullName.Substring($sourceSkillRoot.Length + 1)
+    $installed = Join-Path $skill $relative
+    if (-not (Test-Path -LiteralPath $installed) -or (Get-FileHash -LiteralPath $installed).Hash -ne (Get-FileHash -LiteralPath $file.FullName).Hash) { throw ('Skill supporting file missing/different: ' + $relative) }
+}
 & (Join-Path $PSScriptRoot 'Install.ps1') -SkillDirectory $skill -SkipDependencies | Out-Null
 if ([Convert]::ToBase64String([IO.File]::ReadAllBytes($config)) -ne [Convert]::ToBase64String($originalConfig)) { throw 'Upgrade without roots changed existing config.' }
 [IO.File]::WriteAllText((Join-Path $skill 'SKILL.md'),'existing custom content')
@@ -41,6 +47,17 @@ if (-not $refused -or [IO.File]::ReadAllText((Join-Path $skill 'SKILL.md')) -ne 
 & (Join-Path $PSScriptRoot 'Install.ps1') -WorkspaceRoots @($taskRoot) -SkillDirectory $skill -SkipDependencies -UpdateSkill | Out-Null
 $backups = @(Get-ChildItem -LiteralPath $skill -Filter 'SKILL.md.backup-*')
 if ($backups.Count -ne 1 -or [IO.File]::ReadAllText($backups[0].FullName) -ne 'existing custom content') { throw 'Skill update backup failed.' }
+$reference = Join-Path $skill 'references\instruction-file.md'
+if (Test-Path -LiteralPath $reference) {
+    [IO.File]::WriteAllText($reference,'existing custom reference')
+    $refused = $false
+    try { & (Join-Path $PSScriptRoot 'Install.ps1') -SkillDirectory $skill -SkipDependencies | Out-Null }
+    catch { if ($_.Exception.Message -match 'Existing skill differs') { $refused=$true } else { throw } }
+    if (-not $refused -or [IO.File]::ReadAllText($reference) -ne 'existing custom reference') { throw 'Reference collision was not preserved.' }
+    & (Join-Path $PSScriptRoot 'Install.ps1') -SkillDirectory $skill -SkipDependencies -UpdateSkill | Out-Null
+    $referenceBackups = @(Get-ChildItem -LiteralPath (Split-Path $reference -Parent) -Filter 'instruction-file.md.backup-*')
+    if ($referenceBackups.Count -ne 1 -or [IO.File]::ReadAllText($referenceBackups[0].FullName) -ne 'existing custom reference') { throw 'Reference update backup failed.' }
+}
 $oldPipe = $env:CODEX_APP_TOOLS_PIPE_PATH
 try {
     [Environment]::SetEnvironmentVariable('CODEX_APP_TOOLS_PIPE_PATH',$null)

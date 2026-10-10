@@ -4,7 +4,7 @@
 
 ## 版本约定
 
-- Dispatch 插件版本以 `plugin/codex-dispatch/plugin.json` 和 `.codex-plugin/plugin.json` 的一致声明为准，当前为 `0.1.17`。Skill 正文没有版本标签，以 SHA256 比较内容。
+- Dispatch 插件版本以 `plugin/codex-dispatch/plugin.json` 和 `.codex-plugin/plugin.json` 的一致声明为准，当前为 `0.2.0`。Skill 正文没有版本标签，以 SHA256 比较内容。0.2.0 的单文件输入与旧 workspace/prompt 接口不同，Bridge 和账号 Skill 必须一同更新，并核验实际加载定义。
 - Bridge package 和 MCP server 保留上游包版本 `0.3.1`。它与插件分开编号，不能把插件版本写到 Bridge 上来制造一致性。相同 Bridge 包版本的补丁用 Git commit、dirty 状态、源码／产物摘要和工具定义辨别。
 - 路由文档中 `v0.1.14` 表示中央路由引入版本，Laptop 升级文档和旧安装记录是历史快照；不批量改写历史版本。
 - 插件内容改变且要发布时，按现有语义版本约定同时更新两个 manifest，保留旧 ZIP。只有文档／发布检查改动且插件内容不变时无需增加插件版本。下文第一阶段快照没有更改 Skill 或工具接口；后续 Skill／源码变更仍按各层分别发布核验，不能把该历史结论套到当前修改。
@@ -12,7 +12,7 @@
 ## 一条可检查的路径
 
 1. 在维护目录核实 `git status --short`、`git rev-parse HEAD`、`git remote -v`、远端 main 和并发任务。先保留已有更改。构建依赖来自本仓库锁文件；新电脑运行 Install.ps1 安装依赖，已有依赖可按安装说明复用。
-2. 运行 Bridge 的 typecheck、test、build。Windows 测试环境按 INSTALL.md 设置当前进程的 CODEX_WORKSPACE_ROOT、TEMP 和 TMP。发布检查另运行 `node --test scripts/Release.test.mjs scripts/Skill.test.mjs`，覆盖脚本保护、固定信封、可选发布字段与旧路由兼容；这些模拟测试不代表接收模型的语义判断或实际多远端发布已验证。`npm run build` 在编译成功后生成 `bridge/dist/build-info.json`，记录来源 commit／dirty、包版本和完整源码／产物文件摘要。下载包没有 Git 时来源为 null，不伪造 commit。
+2. 运行 Bridge 的 typecheck、test、build。Windows 测试环境按 INSTALL.md 设置当前进程的 CODEX_WORKSPACE_ROOT、TEMP 和 TMP。发布检查另运行 `node --test scripts/Release.test.mjs scripts/Skill.test.mjs scripts/Kernel.test.mjs`，覆盖脚本保护、固定信封、可选发布字段与旧路由兼容；这些模拟测试不代表接收模型的语义判断或实际多远端发布已验证。`npm run build` 在编译成功后生成 `bridge/dist/build-info.json`，记录来源 commit／dirty、包版本和完整源码／产物文件摘要。下载包没有 Git 时来源为 null，不伪造 commit。
 3. 仓库根运行 `node scripts/Build-Info.mjs --verify`。源码或产物改变、记录缺失都拒绝；Start-Bridge.ps1 在启动前做同一检查。构建记录不是安全签名，也不证明某个进程正在加载这些文件。独立部署需保留 bridge 的 src、dist、package／lock／tsconfig 和同一相对位置的 scripts/Build-Info.mjs，先在准备副本校验，不能对正在使用的副本原地覆盖。
 4. 运行 `scripts/Pack-Plugin.ps1`。它核对两个 manifest，生成目标版本 ZIP，逐项比对 ZIP 与源码的完整文件集合及字节摘要。已存在且完全相同的 ZIP 复用；同版本内容冲突报错且保留文件，不覆盖。只核验用 `-VerifyOnly`。保留输出的 ZIP SHA256，不为每台电脑重打包。
 5. 对本地安装的 Skill 比较源码 SHA256。默认 `.agents/skills` 与 Codex 插件缓存是不同安装方式。已有自定义文件先比较，获准更新时才用 Install.ps1 -UpdateSkill；插件缓存由支持的插件更新入口管理，不直接覆盖缓存。本地缓存不证明 ChatGPT 账户已发布。
@@ -25,7 +25,7 @@
 
    此模式只做健康／就绪、discovery、initialize、tools/list；不调用 artifact_put、codex_start 或 codex_get。逐个工具输出完整定义摘要与 matches_build，有差异退出非零。普通 Test-Bridge 模式仍验证真实文本落盘，不能将其当作无写入检查。
 8. 账户侧按 CONNECT-CHATGPT.md 使用支持的插件详情／更新入口核验发布版本、来源和 Skill 内容；只能使用实得 plugin_id／release ID，不猜测。相同内容已安装则复用身份，不创建替代插件。然后刷新 Bridge 工具元数据，在新会话读取实际工具定义，比较描述、参数、工具集合和禁止轮询规则。只读取定义，不查现有 Job。账户插件和会话工具是不同层，分别记结果。
-9. 需要端到端验收时，让用户从正确 ChatGPT 来源发起明确只读任务，遵守 Skill 的 Goal、来源绑定、权限核对和安全回传要求。观察进入正确桌面项目及实际结果；不自动轮询。未经此证据不宣称全部安装完成。
+9. 需要端到端验收时，让用户从正确 ChatGPT 来源发起明确只读任务，遵守 Skill 的 Goal、文件／任务准入、来源绑定和安全回传要求。观察进入正确桌面项目及实际结果；不自动轮询。未经此证据不宣称全部安装完成。
 
 ## 2026-10-07 Desktop 第一阶段部署前快照
 

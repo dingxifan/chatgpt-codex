@@ -39,7 +39,17 @@ $roots = @($WorkspaceRoots | ForEach-Object {
 if ($roots.Count -eq 0) { throw 'At least one workspace root required.' }
 $source = Join-Path $taskRoot 'plugin\codex-dispatch\skills\codex-dispatch\SKILL.md'
 $destination = Join-Path $SkillDirectory 'SKILL.md'
-$different = (Test-Path -LiteralPath $destination) -and ((Get-FileHash -LiteralPath $destination).Hash -ne (Get-FileHash -LiteralPath $source).Hash)
+$sourceSkillRoot = Split-Path $source -Parent
+$sourceFiles = @(Get-ChildItem -LiteralPath $sourceSkillRoot -Recurse -File -Force)
+$hasInstalledSkill = Test-Path -LiteralPath $destination
+$different = $false
+if ($hasInstalledSkill) {
+    foreach ($file in $sourceFiles) {
+        $relative = $file.FullName.Substring($sourceSkillRoot.Length + 1)
+        $target = Join-Path $SkillDirectory $relative
+        if (-not (Test-Path -LiteralPath $target -PathType Leaf) -or (Get-FileHash -LiteralPath $target).Hash -ne (Get-FileHash -LiteralPath $file.FullName).Hash) { $different = $true; break }
+    }
+}
 if ($different -and -not $UpdateSkill) { throw 'Existing skill differs. Compare it first; use -UpdateSkill only for an intended update.' }
 $npm = (Get-Command npm.cmd -ErrorAction Stop).Source
 Push-Location (Join-Path $taskRoot 'bridge')
@@ -50,8 +60,15 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
 } finally { Pop-Location }
 New-Item -ItemType Directory -Path $SkillDirectory -Force | Out-Null
-if ($different) { Copy-Item -LiteralPath $destination -Destination ($destination + '.backup-' + [guid]::NewGuid().ToString('N')) }
-Copy-Item -LiteralPath $source -Destination $destination -Force
+foreach ($file in $sourceFiles) {
+    $relative = $file.FullName.Substring($sourceSkillRoot.Length + 1)
+    $target = Join-Path $SkillDirectory $relative
+    New-Item -ItemType Directory -Path (Split-Path $target -Parent) -Force | Out-Null
+    if ((Test-Path -LiteralPath $target -PathType Leaf) -and (Get-FileHash -LiteralPath $target).Hash -ne (Get-FileHash -LiteralPath $file.FullName).Hash) {
+        Copy-Item -LiteralPath $target -Destination ($target + '.backup-' + [guid]::NewGuid().ToString('N'))
+    }
+    Copy-Item -LiteralPath $file.FullName -Destination $target -Force
+}
 New-Item -ItemType Directory -Path $local -Force | Out-Null
 if (-not (Test-Path -LiteralPath $config)) {
     $value = [ordered]@{ workspaceRoots=$roots; port=$Port; handoffRoot='.local/handoff'; allowedHosts=@() }
