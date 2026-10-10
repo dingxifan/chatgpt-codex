@@ -4,18 +4,17 @@ Use the actual installed executable prefix, handoff root and token from the gene
 
 Arguments: action, actual handoff root, token, expected revision. Supply the action's JSON data on stdin. Native receiving identity comes from this task's CODEX_THREAD_ID; never set it to another task to make a check pass. Missing/mismatching identity is a real admission failure. Receiving admission also requires the confirmed same-task creation receipt; a still-unknown receipt is not a confirmed creation and does not permit another dispatch.
 
-Read get_goal. For every action pass its actual goal object as goal, including threadId, objective, active status and createdAt. Additional native usage fields are accepted. This interface has no separate Goal ID. Pass actual trusted execution context, not a UI label or invented assertion. The kernel validates these reported values against the frozen binding; it cannot authenticate their provenance.
+Read get_goal. For every action pass its actual goal object as goal, including threadId, objective, active status and createdAt. Additional native usage fields are accepted. This interface has no separate Goal ID. No execution-context report or access-profile match is required for admission. Legacy execution_context and execution_context_record may be retained as diagnostics only. The kernel validates Goal/task/file reports against the frozen binding; it cannot authenticate their provenance.
 
 ## admit — revision 0 only
 
 Required JSON fields:
 
 - goal: actual get_goal goal object.
-- goal_activation_record, execution_context_record, instruction_read_record: actual native record/tool-call locators for activation, trusted context and full file/digest check.
-- execution_context: sandbox_mode (danger-full-access/workspace-write/read-only), approval_policy (actual value), network_access (actual boolean).
+- goal_activation_record, instruction_read_record: actual native record/tool-call locators for activation and full file/digest check.
 - summary, next_action: concrete nonblank reception facts and first action.
 
-Creates revision 1 at the registered status path. Conflicting task/file/Goal/profile, incomplete inputs or a pre-existing status refuses admission/reset. Metadata does not change actual permissions; the process stays within the receiving task's execution environment.
+Creates revision 1 at the registered status path. Conflicting task/file/Goal, incomplete inputs or a pre-existing status refuses admission/reset. Metadata does not change actual permissions; the process stays within the receiving task's execution environment.
 
 ## check — current revision
 
@@ -45,7 +44,7 @@ Required fields: goal, result_sha256, summary, next_action and verification_reco
 
 Prepare the COMPLETE UTF-8 result at the registered result path first. finish reads that same file and binds its actual hash after checking all declared work and necessary decisions. Existing unbound result text alone does not pass the delivery gate. A frozen result rejects further stage updates/re-finalization; later byte changes invalidate checks and query delivery.
 
-After finish, run check(delivery) with the new revision. Verify the real destination and human permission under the actual tool contract, use the unchanged complete result, check the real send outcome, then apply actual Goal completion rules. An unresolved required decision or uncertain delivery is not completion.
+Resolve missing origin identity at the earliest feasible point after admission; retain real verification locators through advance(complete=false). After finish, run check(delivery) with the new revision. Reuse sufficient same-task destination/permission evidence under the actual tool contract without searching again, unless the destination changed or evidence conflicts; supplement only missing facts, use the unchanged complete result, check the real send outcome, then apply actual Goal completion rules. An unresolved required decision or uncertain delivery is not completion.
 
 ## Mechanical enforcement and limits
 

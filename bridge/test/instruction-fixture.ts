@@ -10,7 +10,6 @@ export function metadata(workspace: string, mode: "auto" | "manual" = "auto"): I
   return {
     schema: "codex-instruction/v1", dispatch_token: TOKEN, task_identity: "fixture-001",
     repository: "example/project", workspace, base_sha: "a".repeat(40), method_ref: "not applicable",
-    required_access_profile: "read-only", access_instruction_locator: "human-message-access",
     route: { route_id: "fixture-route", computer: "fixture-computer", bridge_namespace: "fixture-bridge" },
     checkpoints: [{ id: "inspect", title: "Inspect fixture", required_checks: ["inputs"] }, { id: "verify", title: "Verify result", required_checks: ["tests"] }],
     return: {

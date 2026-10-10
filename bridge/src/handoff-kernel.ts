@@ -21,9 +21,9 @@ const statusSchema = z.strictObject({
   admission: z.strictObject({
     source: z.literal("receiver_report"),
     goal_created_at: z.number().nonnegative(),
-    execution_context: z.strictObject({ sandbox_mode: z.enum(["danger-full-access", "workspace-write", "read-only"]), approval_policy: text, network_access: z.boolean() }),
+    execution_context: z.strictObject({ sandbox_mode: z.enum(["danger-full-access", "workspace-write", "read-only"]), approval_policy: text, network_access: z.boolean() }).optional(),
     goal_activation_record: text,
-    execution_context_record: text,
+    execution_context_record: text.optional(),
     instruction_read_record: text,
   }),
   completed: z.array(z.strictObject({ id: text, evidence: z.array(checkEvidence).min(1) })),
@@ -41,8 +41,8 @@ export type KernelAction = "admit" | "advance" | "finish" | "check";
 const goalSnapshot = z.object({ threadId: text, objective: text, status: z.literal("active"), createdAt: z.number().nonnegative() });
 const admitSchema = z.strictObject({
   goal: goalSnapshot, goal_activation_record: text,
-  execution_context_record: text, instruction_read_record: text, summary: text, next_action: text,
-  execution_context: z.strictObject({ sandbox_mode: z.enum(["danger-full-access", "workspace-write", "read-only"]), approval_policy: text, network_access: z.boolean() }),
+  execution_context_record: text.optional(), instruction_read_record: text, summary: text, next_action: text,
+  execution_context: z.strictObject({ sandbox_mode: z.enum(["danger-full-access", "workspace-write", "read-only"]), approval_policy: text, network_access: z.boolean() }).optional(),
 });
 const advanceSchema = z.strictObject({
   goal: goalSnapshot, checkpoint_id: text, complete: z.boolean(),
@@ -105,7 +105,6 @@ export class HandoffKernel {
     if (value.completed.length > checkpoints.length ||
         value.completed.some((item, index) => item.id !== checkpoints[index]!.id) ||
         value.current_checkpoint !== (checkpoints[value.completed.length]?.id ?? null)) throw new Error("CHECKPOINT_ORDER_INVALID");
-    if (value.admission.execution_context.sandbox_mode !== binding.metadata.required_access_profile) throw new Error("ACCESS_PROFILE_MISMATCH");
     if (value.evidence_records.some(record => {
       const checkpoint = checkpoints.find(item => item.id === record.checkpoint_id);
       return !checkpoint || !checkpoint.required_checks.includes(record.check_id);
@@ -185,7 +184,6 @@ export class HandoffKernel {
         if (previous) throw new Error("ALREADY_ADMITTED: do not reset the same task.");
         const data = admitSchema.parse(payload);
         if (data.goal.threadId !== jobId || createHash("sha256").update(data.goal.objective, "utf8").digest("hex") !== r.goal_sha256) throw new Error("GOAL_OBJECTIVE_MISMATCH");
-        if (data.execution_context.sandbox_mode !== binding.metadata.required_access_profile) throw new Error("ACCESS_PROFILE_MISMATCH: use the actual human-selected profile; never elevate it here.");
         const prior = binding.metadata.return.authorization_evidence.prior_verification;
         value = {
           schema: "codex-status/v1", dispatch_token: token, job_id: jobId, instruction_sha256: r.instruction_sha256,

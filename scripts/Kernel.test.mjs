@@ -16,7 +16,6 @@ test('built CLI is executable, propagates nonzero failures and does not contact 
   const data = {
     schema: 'codex-instruction/v1', dispatch_token: token, task_identity: 'cli-fixture',
     repository: 'example/project', workspace: root, base_sha: 'not applicable', method_ref: 'not applicable',
-    required_access_profile: 'read-only', access_instruction_locator: null,
     route: { route_id: 'fixture', computer: 'fixture', bridge_namespace: 'fixture' },
     checkpoints: [{ id: 'inspect', title: 'Read fixture', required_checks: ['inputs'] }],
     return: { mode: 'manual', conversation_id: null, title_hint: null, origin_evidence_locator: null, human_instruction_locator: null,

@@ -18,8 +18,8 @@ test("load preserves full file and original authorization; Goal only derives fro
   assert(loaded.goal.includes(f.input.dispatch_token));
   assert(loaded.goal.length <= MAX_GOAL_LENGTH);
   assert(loaded.prompt.includes(JSON.stringify(loaded.goal)));
-  assert(loaded.prompt.includes(JSON.stringify(f.metadata.required_access_profile)));
-  assert(loaded.prompt.includes(JSON.stringify(f.metadata.access_instruction_locator)));
+  assert.equal(loaded.prompt.includes("Required access profile"), false);
+  assert(loaded.prompt.includes("admit requires goal, goal_activation_record, instruction_read_record"));
   assert.equal(loaded.prompt.includes("Read the fixture only."), false, "Business body remains in its one file.");
   assert.equal(loaded.status_path, path.join(f.root, f.input.dispatch_token + ".status.md"));
 });

@@ -22,7 +22,7 @@ test('Skill discovery and plugin identity remain unchanged while both release ma
   for (const relative of ['plugin/codex-dispatch/plugin.json', 'plugin/codex-dispatch/.codex-plugin/plugin.json']) {
     const current = JSON.parse(readFileSync(path.join(root, relative), 'utf8'));
     const old = JSON.parse(execFileSync('git', ['show', `${baseline}:${relative}`], { cwd: root, encoding: 'utf8' }));
-    assert.equal(current.version, '0.2.0');
+    assert.equal(current.version, '0.2.1');
     delete current.version;
     delete old.version;
     assert.deepEqual(current, old);
@@ -35,7 +35,6 @@ function filled(workspace, mode, publication = '') {
   Object.assign(value, {
     dispatch_token: 'e43e1cca-d731-4ca7-b8c6-1dedc4fd7999', task_identity: 'skill-fixture',
     repository: 'example/project', workspace, base_sha: 'a'.repeat(40), method_ref: 'not applicable',
-    required_access_profile: 'read-only', access_instruction_locator: 'fixture-human-request',
     route: { route_id: 'fixture-route', computer: 'fixture-machine', bridge_namespace: 'fixture-bridge' },
     checkpoints: [{ id: 'inspect', title: 'Inspect fixture', required_checks: ['inputs'] }, { id: 'verify', title: 'Verify result', required_checks: ['tests'] }],
     goal_core: 'Inspect only the fixed fixture under project rules; maintain progress and read this same file for details and completion audit. Before asking for return authority read original evidence and existing same-task verification records, reuse applicable genuine authority under the actual tool contract, otherwise wait for required decisions. Freeze and deliver the complete result or the explicitly permitted local alternative; unresolved required work is not completion.',

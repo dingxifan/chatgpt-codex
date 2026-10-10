@@ -30,11 +30,10 @@ test("one normal path admits, checks, advances declared stages, freezes result a
   assert.equal(readdirSync(f.root).filter(name => /\.lock$|\.tmp$/.test(name)).length, 0);
 });
 
-test("wrong task, changed/paused Goal and mismatching access cannot admit or advance", async () => {
+test("wrong task and changed/paused Goal cannot admit or advance", async () => {
   const f = await kernelFixture();
   await assert.rejects(f.kernel.apply(TOKEN, "other-job", "admit", 0, f.admission), /TASK_BINDING_INVALID/);
   await assert.rejects(f.kernel.apply(TOKEN, f.jobId, "admit", 0, { ...f.admission, goal: { ...f.goal, objective: "other objective" } }), /GOAL_OBJECTIVE_MISMATCH/);
-  await assert.rejects(f.kernel.apply(TOKEN, f.jobId, "admit", 0, { ...f.admission, execution_context: { ...f.admission.execution_context, sandbox_mode: "danger-full-access" } }), /ACCESS_PROFILE_MISMATCH/);
   await f.kernel.apply(TOKEN, f.jobId, "admit", 0, f.admission);
   await assert.rejects(f.kernel.apply(TOKEN, f.jobId, "check", 1, { goal: { ...f.goal, createdAt: 2 }, purpose: "work" }), /GOAL_CHANGED/);
   await assert.rejects(f.kernel.apply(TOKEN, f.jobId, "check", 1, { goal: { ...f.goal, status: "paused" }, purpose: "work" }));
@@ -151,4 +150,24 @@ test("CLI rejects missing/wrong receiving context and unknown action rather than
   await assert.rejects(runKernel(["admit", f.root, TOKEN, "0"], input, "other-job"), /TASK_BINDING_INVALID/);
   await assert.rejects(runKernel(["retry", f.root, TOKEN, "0"], input, f.jobId), /Usage/);
   assert.equal((await runKernel(["admit", f.root, TOKEN, "0"], input, f.jobId)).written, true);
+});
+
+test("admission needs no access report; legacy profile mismatch is diagnostic only", async () => {
+  const f = await kernelFixture();
+  const { execution_context, execution_context_record, ...admission } = f.admission;
+  await f.kernel.apply(TOKEN, f.jobId, "admit", 0, admission);
+  assert.equal(((await f.kernel.inspect(f.receipt)).validation as any).status, "valid");
+  await f.kernel.apply(TOKEN, f.jobId, "advance", 1, advanceData(f.goal));
+  const legacy = await kernelFixture();
+  const raw = readFileSync(legacy.file.path, "utf8").replace('"method_ref": "not applicable",', '"method_ref": "not applicable", "required_access_profile": "read-only", "access_instruction_locator": null,');
+  // Use a new immutable fixture/receipt so the original digest binding remains real.
+  const file = await legacy.artifacts.put({ filename: "legacy.instruction.md", content: raw.replaceAll(TOKEN, "b3f29391-ef2c-46ed-912f-1c24d981a4d4") });
+  const { InstructionStore } = await import("../src/instruction.js");
+  const loaded = await new InstructionStore(legacy.artifacts, [legacy.root]).load({ instruction_file: file.path, expected_sha256: file.sha256, dispatch_token: "b3f29391-ef2c-46ed-912f-1c24d981a4d4" });
+  const receipt = await legacy.receipts.reserve(loaded);
+  await legacy.receipts.finish(receipt, { creation_status: "created", job_id: legacy.jobId, diagnostic: null });
+  const goal = { ...legacy.goal, objective: loaded.goal };
+  await legacy.kernel.apply(loaded.metadata.dispatch_token, legacy.jobId, "admit", 0, { ...legacy.admission, goal, execution_context: { ...legacy.admission.execution_context, sandbox_mode: "danger-full-access" } });
+  const checked = await legacy.kernel.apply(loaded.metadata.dispatch_token, legacy.jobId, "check", 1, { goal, purpose: "work" });
+  assert.equal(checked.checked, true);
 });
